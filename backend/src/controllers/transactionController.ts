@@ -51,6 +51,14 @@ function serialize(value: unknown): unknown {
   );
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function hasOwn(object: Record<string, unknown>, property: string): boolean {
+  return Object.prototype.hasOwnProperty.call(object, property);
+}
+
 async function create(req: Request, res: Response, forcedType: TransactionType) {
   try {
     const { organizacaoId: organizationId, usuarioId: userId } = getContexto(req);
@@ -148,6 +156,215 @@ export async function createTransaction(req: Request, res: Response) {
   }
 
   return create(req, res, requestedType as TransactionType);
+}
+
+/**
+ * PUT /lancamentos/:id
+ *
+ * Aceita alterações parciais dos campos editáveis.
+ * Os dados finais do lançamento são revalidados antes da atualização.
+ */
+export async function updateOne(req: Request, res: Response) {
+  try {
+    const { organizacaoId: organizationId } = getContexto(req);
+
+    const id = parseBigInt(req.params.id);
+
+    if (!id) {
+      return res.status(400).json({
+        erro: 'id é obrigatório e deve ser válido.',
+      });
+    }
+
+    if (!isRecord(req.body)) {
+      return res.status(400).json({
+        erro: 'O corpo da requisição deve ser um objeto JSON.',
+      });
+    }
+
+    const body = req.body;
+
+    // Apenas esses campos podem ser alterados por esta API.
+    const editableFields = new Set([
+      'categoryId',
+      'amount',
+      'date',
+      'description',
+      'source',
+      'recipient',
+    ]);
+
+    const unsupportedFields = Object.keys(body).filter((field) => !editableFields.has(field));
+
+    if (unsupportedFields.length > 0) {
+      return res.status(400).json({
+        erro: 'A requisição contém campos desconhecidos ou não editáveis.',
+        campos: unsupportedFields,
+      });
+    }
+
+    if (Object.keys(body).length === 0) {
+      return res.status(400).json({
+        erro: 'Informe pelo menos um campo para atualizar.',
+      });
+    }
+
+    // A consulta já restringe o lançamento à organização selecionada.
+    const currentTransaction = await transactionRepository.findTransactionById(id, organizationId);
+
+    if (!currentTransaction) {
+      return res.status(404).json({
+        erro: 'Lançamento não encontrado.',
+      });
+    }
+
+    // Lançamentos estornados não podem ser modificados.
+    if (currentTransaction.reversedAt || currentTransaction.status === 'ESTORNADO') {
+      return res.status(409).json({
+        erro: 'Lançamento estornado não pode ser editado. Registre um novo lançamento com os dados corretos.',
+      });
+    }
+
+    /*
+     * Monta o estado final do lançamento.
+     *
+     * Se um campo não foi enviado, seu valor atual é mantido.
+     * Se foi enviado, o novo valor é validado.
+     */
+    const categoryId = hasOwn(body, 'categoryId')
+      ? parseBigInt(body.categoryId)
+      : currentTransaction.categoryId;
+
+    const amount = hasOwn(body, 'amount')
+      ? parseMoney(body.amount)
+      : parseMoney(currentTransaction.amount);
+
+    const date = hasOwn(body, 'date') ? parseDateOnly(body.date) : currentTransaction.date;
+
+    if (!categoryId || !amount || !date) {
+      return res.status(400).json({
+        erro: 'categoryId, amount ou date inválidos.',
+      });
+    }
+
+    let description = currentTransaction.description;
+
+    if (hasOwn(body, 'description')) {
+      if (
+        typeof body.description !== 'string' ||
+        body.description.trim().length === 0 ||
+        body.description.length > 5000
+      ) {
+        return res.status(400).json({
+          erro: 'description deve ser um texto entre 1 e 5000 caracteres.',
+        });
+      }
+
+      description = body.description.trim();
+    }
+
+    let source: string | null = currentTransaction.source;
+    let recipient: string | null = currentTransaction.recipient;
+
+    if (hasOwn(body, 'source')) {
+      if (body.source !== null && typeof body.source !== 'string') {
+        return res.status(400).json({
+          erro: 'source deve ser texto ou null.',
+        });
+      }
+
+      source = typeof body.source === 'string' && body.source.trim() ? body.source.trim() : null;
+    }
+
+    if (hasOwn(body, 'recipient')) {
+      if (body.recipient !== null && typeof body.recipient !== 'string') {
+        return res.status(400).json({
+          erro: 'recipient deve ser texto ou null.',
+        });
+      }
+
+      recipient =
+        typeof body.recipient === 'string' && body.recipient.trim() ? body.recipient.trim() : null;
+    }
+
+    const type = currentTransaction.type;
+
+    if (hasOwn(body, 'date')) {
+      const organization = await transactionRepository.getOrganizationById(organizationId);
+
+      if (!organization) {
+        return res.status(404).json({
+          erro: 'Organização não encontrada.',
+        });
+      }
+
+      if (
+        !organization.managementStart ||
+        !organization.managementEnd ||
+        date < organization.managementStart ||
+        date > organization.managementEnd
+      ) {
+        return res.status(400).json({
+          erro: 'A data do lançamento deve estar dentro do período de gestão da organização.',
+        });
+      }
+    }
+
+    /*
+     * Revalida a categoria usando o tipo final.
+     * Isso também cobre o caso em que categoryId e type são alterados juntos.
+     */
+    const category = await transactionRepository.getCategoryForOrganization(
+      categoryId,
+      organizationId,
+      type,
+    );
+
+    if (!category) {
+      return res.status(400).json({
+        erro: 'Categoria não encontrada, inativa ou incompatível com o tipo do lançamento.',
+      });
+    }
+
+    const updatedTransaction = await transactionRepository.updateTransaction(id, organizationId, {
+      categoryId,
+      amount,
+      date,
+      type,
+      description,
+      source,
+      recipient,
+    });
+
+    if (!updatedTransaction) {
+      // Verifica se o lançamento foi removido ou estornado durante a operação.
+      const latestTransaction = await transactionRepository.findTransactionById(id, organizationId);
+
+      if (!latestTransaction) {
+        return res.status(404).json({
+          erro: 'Lançamento não encontrado.',
+        });
+      }
+
+      if (latestTransaction.reversedAt || latestTransaction.status === 'ESTORNADO') {
+        return res.status(409).json({
+          erro: 'Lançamento estornado não pode ser editado. Registre um novo lançamento com os dados corretos.',
+        });
+      }
+
+      return res.status(409).json({
+        erro: 'Não foi possível atualizar o lançamento. Tente novamente.',
+      });
+    }
+
+    return res.status(200).json(serialize(updatedTransaction));
+  } catch (error) {
+    console.error('[update transaction]', error);
+
+    return res.status(500).json({
+      erro: 'Erro interno ao atualizar lançamento.',
+    });
+  }
 }
 
 // Mantidos como aliases caso queiramos expor endpoints separados no futuro.

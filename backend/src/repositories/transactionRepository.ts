@@ -15,6 +15,16 @@ export type CreateTransactionData = {
   createdAt: Date;
 };
 
+export type UpdateTransactionData = {
+  categoryId?: bigint;
+  amount?: Prisma.Decimal;
+  date?: Date;
+  type?: string;
+  description?: string;
+  source?: string | null;
+  recipient?: string | null;
+};
+
 const transactionInclude = {
   category: {
     select: {
@@ -88,6 +98,36 @@ export async function findTransactionById(id: bigint, organizationId: bigint) {
     where: { id, organizationId },
     include: transactionInclude,
   });
+}
+
+/**
+ * Atualiza somente campos editáveis de um lançamento da organização.
+ *
+ * O filtro também impede a atualização de lançamentos estornados.
+ * Retorna null quando nenhum registro corresponde aos critérios.
+ */
+export async function updateTransaction(
+  id: bigint,
+  organizationId: bigint,
+  data: UpdateTransactionData,
+) {
+  const result = await prisma.transaction.updateMany({
+    where: {
+      id,
+      organizationId,
+      reversedAt: null,
+      status: {
+        not: 'ESTORNADO',
+      },
+    },
+    data,
+  });
+
+  if (result.count === 0) {
+    return null;
+  }
+
+  return findTransactionById(id, organizationId);
 }
 
 export async function getMonthlySummary(organizationId: bigint, start: Date, end: Date) {

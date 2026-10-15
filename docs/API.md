@@ -505,6 +505,25 @@ Erros:
 
 Compatibilidade atual: responde em `GET /transactions/:id` e devolve propriedades em inglês.
 
+### `PUT /lancamentos/{id}`
+
+Exige autenticação e papel `TESOUREIRO`. Atualiza parcialmente `categoryId`, `amount`, `date`,
+`description`, `source` e `recipient`. O tipo (`type`/`tipo`), o responsável e a organização não
+são editáveis. A data é validada dentro do período de gestão quando enviada; alterações em outros
+campos preservam a data já registrada. Lançamentos estornados não podem ser alterados.
+
+Sucesso `200`: devolve o lançamento atualizado.
+
+Erros:
+
+- `400`: ID, campos, valores ou data inválidos;
+- `401`: autenticação ausente ou inválida;
+- `403`: papel sem permissão ou vínculo inativo;
+- `404`: lançamento ausente ou pertencente a outra organização;
+- `409`: lançamento estornado ou conflito ao atualizar.
+
+Compatibilidade atual: responde em `PUT /transactions/:id`, recebe e devolve propriedades em inglês.
+
 ### `POST /lancamentos/{id}/comprovante`
 
 Exige autenticação e papel `TESOUREIRO`. O conteúdo é `multipart/form-data`, no campo `arquivo`.
