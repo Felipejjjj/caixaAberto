@@ -257,9 +257,9 @@ Erros:
 
 ## Membros
 
-As rotas de membros trazem a organização no caminho. O `{id}` precisa ser a organização do
-contexto, resolvida pelo login e por `X-Organization-Id`; qualquer outra responde `404`, sem
-revelar se ela existe.
+As rotas de consulta e vínculo trazem a organização no caminho. O `{id}` precisa ser a organização
+do contexto, resolvida pelo login e por `X-Organization-Id`; qualquer outra responde `404`, sem
+revelar se ela existe. A alteração de papel usa o ID do vínculo retornado pela listagem, não o ID do usuário.
 
 ### `GET /organizacoes/{id}/membros`
 
@@ -322,6 +322,31 @@ Erros:
 - `403`: papel sem permissão ou vínculo inativo;
 - `404`: organização diferente da do contexto, ou e-mail sem usuário cadastrado;
 - `409`: usuário já é membro ativo da organização, ou conta inativa.
+
+### `PUT /membros/{id}/papel`
+
+Exige autenticação e papel `TESOUREIRO`. `{id}` é o ID do vínculo do membro na organização,
+conforme retornado por `GET /organizacoes/{id}/membros`.
+
+Request:
+
+```json
+{ "papel": "TESOUREIRO" }
+```
+
+Aceita `TESOUREIRO` ou `CONSULTOR`. A organização não pode ficar sem tesoureiro ativo: a tentativa
+de rebaixar o último responde `409`. A verificação e a alteração são feitas de forma transacional,
+para impedir rebaixamentos simultâneos que deixem a organização sem tesoureiro.
+
+Sucesso `200`: devolve o vínculo atualizado.
+
+Erros:
+
+- `400`: ID ou papel inválido, ou propriedade não reconhecida;
+- `401`: autenticação ausente ou inválida;
+- `403`: papel sem permissão ou vínculo inativo;
+- `404`: vínculo ausente, inativo ou pertencente a outra organização;
+- `409`: tentativa de rebaixar o último tesoureiro ativo ou conflito concorrente.
 
 ## Categorias
 

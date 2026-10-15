@@ -8,6 +8,7 @@ import type { MemberRecord } from '../repositories/membershipRepository.js';
 const USER_NOT_FOUND = 'Usuário não encontrado';
 const ALREADY_ACTIVE_MEMBER = 'Usuário já é membro ativo da organização';
 const INACTIVE_USER = 'Usuário inativo não pode ser vinculado';
+const MEMBER_NOT_FOUND = 'Membro ativo não encontrado na organização';
 
 // Todo vinculo comeca como consultor. Dar o papel de tesoureiro e a alteracao de papel da US10.
 const DEFAULT_ROLE: Role = 'CONSULTOR';
@@ -104,4 +105,39 @@ export async function addMember(organizationId: bigint, email: string): Promise<
 
     throw error;
   }
+}
+
+/**
+ * Altera o papel de um membro da organização atual.
+ *
+ * O membershipId é o ID do vínculo, não o ID do usuário.
+ * A autorização para executar essa operação fica no middleware da rota.
+ */
+export async function changeMemberRole(
+  organizationId: bigint,
+  membershipId: bigint,
+  role: Role,
+): Promise<MemberResponse> {
+  let updatedMember: MemberRecord | null;
+  try {
+    updatedMember = await membershipRepository.updateActiveMemberRole(
+      membershipId,
+      organizationId,
+      role,
+    );
+  } catch (error) {
+    if (error instanceof membershipRepository.LastActiveTreasurerError) {
+      throw new AppError(409, error.message);
+    }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+      throw new AppError(409, 'Conflito ao alterar o papel. Tente novamente.');
+    }
+    throw error;
+  }
+
+  if (!updatedMember) {
+    throw new AppError(404, MEMBER_NOT_FOUND);
+  }
+
+  return toResponse(updatedMember);
 }
