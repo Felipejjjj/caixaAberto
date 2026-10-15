@@ -8,15 +8,16 @@ datasource db {
 }
 
 model User {
-  id            BigInt         @id @default(autoincrement())
-  name          String         @map("nome") @db.VarChar(150)
-  email         String         @unique(map: "USUARIO_email_key") @db.VarChar(150)
-  passwordHash  String         @map("senha") @db.VarChar(255)
-  active        Boolean        @map("ativo")
-  createdAt     DateTime       @map("data_criacao") @db.Timestamp(6)
-  memberships   Membership[]
-  transactions  Transaction[]
-  revokedTokens RevokedToken[]
+  id                  BigInt               @id @default(autoincrement())
+  name                String               @map("nome") @db.VarChar(150)
+  email               String               @unique(map: "USUARIO_email_key") @db.VarChar(150)
+  passwordHash        String               @map("senha") @db.VarChar(255)
+  active              Boolean              @map("ativo")
+  createdAt           DateTime             @map("data_criacao") @db.Timestamp(6)
+  memberships         Membership[]
+  transactions        Transaction[]
+  revokedTokens       RevokedToken[]
+  passwordResetTokens PasswordResetToken[]
 
   @@map("USUARIO")
 }
@@ -35,6 +36,22 @@ model RevokedToken {
 
   @@index([expiresAt], map: "TOKEN_REVOGADO_expira_em_idx")
   @@map("TOKEN_REVOGADO")
+}
+
+// Pedidos de redefinicao de senha (US02). Guarda o hash, nunca o token, como TOKEN_REVOGADO. O
+// token vale uma vez so: usado_em marca o uso e tambem o descarte quando um pedido novo substitui o
+// anterior.
+model PasswordResetToken {
+  id        BigInt    @id @default(autoincrement())
+  tokenHash String    @unique(map: "TOKEN_REDEFINICAO_SENHA_hash_token_key") @map("hash_token") @db.VarChar(64)
+  userId    BigInt    @map("usuario_id")
+  expiresAt DateTime  @map("expira_em") @db.Timestamp(6)
+  usedAt    DateTime? @map("usado_em") @db.Timestamp(6)
+  createdAt DateTime  @map("data_criacao") @db.Timestamp(6)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId], map: "TOKEN_REDEFINICAO_SENHA_usuario_id_idx")
+  @@map("TOKEN_REDEFINICAO_SENHA")
 }
 
 model Organization {

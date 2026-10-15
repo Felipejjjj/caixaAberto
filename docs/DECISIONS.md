@@ -147,3 +147,20 @@ A imagem de produção deixou de podar as dependências de desenvolvimento. O CL
 que lê o `prisma.config.ts` estão entre elas, e são o que aplica as migrações na subida do
 container, já que o plano gratuito não oferece um passo separado antes do deploy. A imagem fica
 maior em troca de conseguir migrar o banco.
+
+## 2026-10-15: Link de redefinição de senha pelo log
+
+A US02 pede que a pessoa acesse "o link recebido", mas a proposta deixa notificação por e-mail fora
+do escopo. A equipe optou por implementar a API completa, com token aleatório guardado como hash,
+validade de 60 minutos e uso único, e deixar o envio atrás da interface `PasswordResetNotifier`, em
+`src/notifications/passwordResetNotifier.ts`. A única implementação registra o link no log do
+servidor. Na demonstração, o link é lido nos logs do Render.
+
+O envio real por SMTP foi descartado por ora: traria uma dependência nova e credenciais como segredo
+no Render para algo que a proposta não prevê. Se a decisão mudar, basta trocar a implementação da
+interface, sem tocar no serviço, nas regras do token ou nos testes, que substituem o envio por um
+dublê e leem o link dele.
+
+As sessões abertas antes da troca de senha continuam válidas até expirarem, em até um dia. Derrubá-las
+exigiria que a autenticação conferisse a data da última troca de senha, uma mudança no middleware
+de autenticação que ficou fora desta história.
