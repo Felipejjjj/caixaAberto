@@ -14,6 +14,9 @@ model User {
   passwordHash        String               @map("senha") @db.VarChar(255)
   active              Boolean              @map("ativo")
   createdAt           DateTime             @map("data_criacao") @db.Timestamp(6)
+  // Tokens emitidos antes deste momento deixam de valer. A redefinicao de senha grava aqui, para
+  // quem tinha a senha antiga nao continuar dentro com uma sessao aberta.
+  sessionsValidFrom   DateTime?            @map("sessoes_validas_desde") @db.Timestamp(6)
   memberships         Membership[]
   transactions        Transaction[]
   revokedTokens       RevokedToken[]

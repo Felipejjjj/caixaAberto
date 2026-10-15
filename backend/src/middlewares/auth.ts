@@ -37,7 +37,13 @@ function extractToken(req: Request): string | null {
   return authHeader.split(' ')[1] || null;
 }
 
-function decodeUser(token: string): AuthUser {
+interface DecodedToken {
+  user: AuthUser;
+  // Segundos desde a epoca, como o iat do JWT.
+  issuedAt: number;
+}
+
+function decodeToken(token: string): DecodedToken {
   // gambiarrazinha essa verificação de novo do JWT_SECRET
   const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -49,14 +55,28 @@ function decodeUser(token: string): AuthUser {
 
   const id = decoded.sub ?? decoded.id;
 
-  if (!id || !decoded.email) {
+  if (!id || !decoded.email || typeof decoded.iat !== 'number') {
     throw new Error('Payload do token inválido');
   }
 
   return {
-    id: String(id),
-    email: decoded.email,
+    user: {
+      id: String(id),
+      email: decoded.email,
+    },
+    issuedAt: decoded.iat,
   };
+}
+
+function decodeUser(token: string): AuthUser {
+  return decodeToken(token).user;
+}
+
+// O iat do JWT so tem precisao de segundos. Comparar pelo segundo inteiro mantem valido o login feito
+// logo depois da troca de senha, no mesmo segundo; o preco e aceitar um token emitido nesse mesmo
+// segundo antes da troca.
+function issuedBeforeCutoff(issuedAt: number, cutoff: Date): boolean {
+  return issuedAt < Math.floor(cutoff.getTime() / 1000);
 }
 
 /**
@@ -77,9 +97,10 @@ async function authenticate(req: AuthRequest, _res: Response, next: NextFunction
   }
 
   let user: AuthUser;
+  let issuedAt: number;
 
   try {
-    user = decodeUser(token);
+    ({ user, issuedAt } = decodeToken(token));
   } catch {
     next(new AppError(401, 'Token inválido ou expirado.'));
     return;
@@ -91,6 +112,16 @@ async function authenticate(req: AuthRequest, _res: Response, next: NextFunction
     if (await revokedTokenRepository.isRevoked(token)) {
       next(new AppError(401, 'Token inválido ou expirado.'));
       return;
+    }
+
+    // A redefinicao de senha encerra as sessoes abertas com a senha antiga.
+    if (/^\d+$/.test(user.id)) {
+      const cutoff = await revokedTokenRepository.findSessionsValidFrom(BigInt(user.id));
+
+      if (cutoff && issuedBeforeCutoff(issuedAt, cutoff)) {
+        next(new AppError(401, 'Sessão encerrada pela troca de senha. Entre novamente.'));
+        return;
+      }
     }
   } catch (error) {
     next(error);

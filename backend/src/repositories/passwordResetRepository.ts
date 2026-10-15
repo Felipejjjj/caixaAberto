@@ -37,7 +37,7 @@ export async function replacePendingTokens(data: NewPasswordResetData): Promise<
  * Consome o token e grava a senha nova na mesma transacao.
  *
  * O token so e aceito uma vez: a marcacao de uso exige usado_em vazio, entao duas requisicoes com o
- * mesmo link nao passam juntas. Devolve false quando o token nao existe, expirou, ja foi usado ou
+ * mesmo link nao passam juntas. A troca tambem encerra as sessoes abertas. Devolve false quando o token nao existe, expirou, ja foi usado ou
  * pertence a uma conta inativa.
  */
 export async function consumeTokenAndUpdatePassword(
@@ -64,9 +64,10 @@ export async function consumeTokenAndUpdatePassword(
       return false;
     }
 
+    // As sessoes abertas com a senha antiga caem junto com ela.
     await transaction.user.update({
       where: { id: token.userId },
-      data: { passwordHash },
+      data: { passwordHash, sessionsValidFrom: now },
     });
 
     return true;
