@@ -15,6 +15,7 @@ import { testContextMiddleware } from './middlewares/test-context.js';
 import authRouter from './routers/authRouter.js';
 import categoryRouter from './routers/categoryRouter.js';
 import organizationRouter from './routers/organizationRouter.js';
+import passwordResetRouter from './routers/passwordResetRouter.js';
 import receiptRouter from './routers/receiptRouter.js';
 import reportRouter from './routers/reportRouter.js';
 import statementRouter from './routers/statementRouter.js';
@@ -77,6 +78,7 @@ export function createApp() {
     );
   }
 
+  app.use('/auth/senha', passwordResetRouter);
   app.use('/auth', authRouter);
   app.use('/organizacoes', organizationRouter);
   app.use('/users', userRouter);
