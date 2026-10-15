@@ -699,6 +699,80 @@ Erros:
 Compatibilidade atual: responde em `GET /transactions/resumo/mensal` e devolve `month`,
 `entries`, `exits`, `balance` e `previousMonth`.
 
+## Organizações
+
+### `POST /organizacoes`
+
+Exige autenticação, mas não exige vínculo nem `X-Organization-Id`: é por ela que um usuário sem
+organização começa. Cria a organização e vincula o criador como `TESOUREIRO` na mesma transação.
+
+Request:
+
+```json
+{
+  "nome": "Atlética TSI",
+  "descricao": "Gestão 2026/2027",
+  "inicioGestao": "2026-09-01",
+  "fimGestao": "2027-08-31"
+}
+```
+
+Sucesso `201`:
+
+```json
+{
+  "organizacao": {
+    "id": "3",
+    "nome": "Atlética TSI",
+    "descricao": "Gestão 2026/2027",
+    "inicioGestao": "2026-09-01",
+    "fimGestao": "2027-08-31",
+    "linkPublico": null,
+    "transparenciaAtiva": false
+  },
+  "vinculoCriador": {
+    "id": "15",
+    "papel": "TESOUREIRO",
+    "dataVinculo": "2026-10-14",
+    "ativo": true
+  }
+}
+```
+
+`fimGestao` não pode anteceder `inicioGestao`; os dois podem ser o mesmo dia. Quem já tinha
+vínculo ativo em outra organização passa a ter dois e precisa enviar `X-Organization-Id` nas rotas
+que dependem do contexto.
+
+Erros:
+
+- `400`: dados inválidos, data inexistente, período invertido ou propriedade não reconhecida;
+- `401`: autenticação ausente ou inválida, ou conta inativa.
+
+### `PUT /organizacoes/{id}`
+
+Exige autenticação e papel `TESOUREIRO`. O `{id}` precisa ser a organização do contexto. Altera
+parcialmente `nome`, `descricao`, `inicioGestao` e `fimGestao`, com ao menos um deles. Uma data
+enviada sozinha é validada contra a que já está gravada.
+
+Request:
+
+```json
+{ "nome": "Atlética TSI 2026", "fimGestao": "2027-01-31" }
+```
+
+Sucesso `200`: devolve a organização no mesmo formato de `organizacao` acima.
+
+O período não pode deixar de fora nenhum lançamento da organização, estornados inclusive: fora da
+gestão um lançamento não poderia mais ser corrigido.
+
+Erros:
+
+- `400`: dados inválidos, corpo vazio, período invertido ou propriedade não reconhecida;
+- `401`: autenticação ausente ou inválida;
+- `403`: papel sem permissão ou vínculo inativo;
+- `404`: organização diferente da do contexto;
+- `409`: o novo período deixa lançamentos de fora.
+
 ## Transparência pública
 
 ### `GET /organizacoes/atual/link-publico`

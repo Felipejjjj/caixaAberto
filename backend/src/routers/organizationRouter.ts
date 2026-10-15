@@ -14,6 +14,8 @@ import {
   requireRole,
 } from '../middlewares/load-context.js';
 
+import * as organizationController from '../controllers/organizationController.js';
+
 const router = Router();
 
 // Leitura do proprio vinculo: qualquer membro com vinculo ativo, entao sem requireRole.
@@ -53,6 +55,21 @@ router.post(
   requireContextOrganization,
   requireRole('TESOUREIRO'),
   addMember,
+);
+
+// Criar organização.
+// Não utiliza loadContext: o usuário ainda pode não ter uma organização selecionada.
+router.post('/', authenticate, organizationController.createOrganization);
+
+// Atualizar os dados da organização.
+// Primeiro confere a organização do caminho; depois, o papel do usuário.
+router.put(
+  '/:id',
+  authenticate,
+  loadContext,
+  requireContextOrganization,
+  requireRole('TESOUREIRO'),
+  organizationController.updateOrganization,
 );
 
 export default router;
