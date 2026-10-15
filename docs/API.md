@@ -124,6 +124,57 @@ Erros:
 O token apresentado é registrado como revogado até a data em que expiraria, então não volta a ser
 aceito depois da saída.
 
+### `POST /auth/senha/solicitar`
+
+Não exige autenticação. Gera um link de redefinição para o e-mail informado. A comparação do e-mail
+não diferencia maiúsculas nem espaços nas pontas.
+
+Request:
+
+```json
+{ "email": "ana@example.test" }
+```
+
+Sucesso `202`, sempre com a mesma mensagem, exista o e-mail ou não:
+
+```json
+{ "mensagem": "Se o e-mail estiver cadastrado, enviaremos um link para redefinir a senha." }
+```
+
+E-mail desconhecido e conta inativa não geram link, mas recebem a mesma resposta, para a tela não
+revelar quais e-mails têm conta. O link tem o formato `{CORS_ORIGIN}/redefinir-senha?token=...`,
+vale por 60 minutos e por um uso. Um pedido novo invalida o link anterior. Por enquanto o link é
+registrado no log do servidor, sem envio de e-mail (ver `docs/DECISIONS.md`).
+
+Erros:
+
+- `400`: e-mail inválido ou propriedade não reconhecida.
+
+### `POST /auth/senha/redefinir`
+
+Não exige autenticação. Troca a senha usando o token do link.
+
+Request:
+
+```json
+{ "token": "valor-do-parametro-token-do-link", "novaSenha": "novaSenha@456" }
+```
+
+Sucesso `200`:
+
+```json
+{ "mensagem": "Senha redefinida. Entre com a nova senha." }
+```
+
+A nova senha tem de 8 caracteres a 72 bytes, o limite do bcrypt. Depois da troca, a senha antiga
+deixa de funcionar no login. Uma senha recusada não consome o link.
+
+Erros:
+
+- `400`: senha fora do tamanho, propriedade não reconhecida, ou token inexistente, expirado, já
+  usado ou de conta inativa, este com a mensagem
+  `Link de redefinição inválido ou expirado. Solicite um novo.`
+
 ## Usuários
 
 ### `GET /usuarios`
