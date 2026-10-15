@@ -5,6 +5,9 @@ import { loadContext, requireRole } from '../middlewares/load-context.js';
 
 const router = express.Router();
 
+// Esta consulta precisa funcionar antes de a pessoa escolher uma organização.
+router.get('/me/organizacoes', authenticate, userController.getMyOrganizations);
+
 router.use(authenticate, loadContext);
 
 // Leitura: qualquer membro com vinculo ativo enxerga os colegas da propria organizacao.

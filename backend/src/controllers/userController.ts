@@ -2,6 +2,9 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 
 import type { User } from '../generated/prisma/client.js';
+import { formatCivilDate } from '../domain/civil-date.js';
+import type { AuthRequest } from '../middlewares/auth.js';
+import { identifierSchema } from '../schemas/identifier.js';
 import { getContexto } from '../middlewares/load-context.js';
 import * as membershipRepository from '../repositories/membershipRepository.js';
 import userRepository from '../repositories/userRepository.js';
@@ -239,10 +242,56 @@ async function deleteUser(req: Request, res: Response) {
   }
 }
 
+// O usuario autenticado e identificado pelo token.
+// Nao depende de X-Organizacao-Id nem de getContexto().
+async function getMyOrganizations(req: AuthRequest, res: Response) {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({
+        erro: 'Usuário não autenticado',
+      });
+    }
+
+    const parsedId = identifierSchema.safeParse(req.user.id);
+    if (!parsedId.success) {
+      return res.status(401).json({
+        erro: 'Identificador do usuário autenticado inválido',
+      });
+    }
+
+    const usuarioId = parsedId.data;
+    const memberships = await userRepository.findOrganizationsByUser(usuarioId);
+
+    const dados = memberships.map((membership) => ({
+      vinculoId: membership.id.toString(),
+      papel: membership.role,
+      dataVinculo: formatCivilDate(membership.linkedAt),
+      organizacao: {
+        id: membership.organization.id.toString(),
+        nome: membership.organization.name,
+        descricao: membership.organization.description,
+        inicioGestao: formatCivilDate(membership.organization.managementStart),
+        fimGestao: formatCivilDate(membership.organization.managementEnd),
+        linkPublico: membership.organization.publicLink,
+        transparenciaAtiva: membership.organization.transparencyActive,
+      },
+    }));
+
+    return res.status(200).json({ dados });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      erro: 'Erro ao buscar organizações do usuário',
+    });
+  }
+}
+
 export default {
   getUsers,
   getUserById,
   createUser,
   updateUser,
   deleteUser,
+  getMyOrganizations,
 };

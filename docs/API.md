@@ -219,6 +219,42 @@ Erros:
 
 Compatibilidade atual: responde em `PUT /users/:id` com request e response em inglês.
 
+## Organizações do usuário autenticado
+
+### `GET /users/me/organizacoes`
+
+Exige autenticação, mas não exige `X-Organization-Id`. Retorna as organizações em que o usuário
+autenticado possui vínculo ativo, ordenadas pelo nome. Vínculos inativos não aparecem; usuários sem
+vínculos ativos recebem uma lista vazia.
+
+Sucesso `200`:
+
+```json
+{
+  "dados": [
+    {
+      "vinculoId": "12",
+      "papel": "CONSULTOR",
+      "dataVinculo": "2026-09-24",
+      "organizacao": {
+        "id": "2",
+        "nome": "Comissão",
+        "descricao": "Caixa da comissão",
+        "inicioGestao": "2026-01-01",
+        "fimGestao": "2026-12-31",
+        "linkPublico": null,
+        "transparenciaAtiva": false
+      }
+    }
+  ]
+}
+```
+
+Erros:
+
+- `401`: autenticação ausente ou inválida;
+- `500`: falha ao consultar as organizações.
+
 ## Membros
 
 As rotas de membros trazem a organização no caminho. O `{id}` precisa ser a organização do

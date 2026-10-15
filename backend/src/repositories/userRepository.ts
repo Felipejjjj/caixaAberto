@@ -98,6 +98,38 @@ async function deleteById(id: bigint) {
   });
 }
 
+// Retorna somente organizacoes em que o usuario possui vinculo ativo.
+// A senha e outros dados privados do usuario nao sao selecionados.
+async function findOrganizationsByUser(userId: bigint) {
+  return prisma.membership.findMany({
+    where: {
+      userId,
+      active: true,
+    },
+    select: {
+      id: true,
+      role: true,
+      linkedAt: true,
+      organization: {
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          managementStart: true,
+          managementEnd: true,
+          publicLink: true,
+          transparencyActive: true,
+        },
+      },
+    },
+    orderBy: {
+      organization: {
+        name: 'asc',
+      },
+    },
+  });
+}
+
 export default {
   findAll,
   findAllByOrganization,
@@ -107,4 +139,5 @@ export default {
   create,
   update,
   deleteById,
+  findOrganizationsByUser,
 };
