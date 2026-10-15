@@ -38,4 +38,15 @@ async function deleteExpired(now: Date = new Date()) {
   });
 }
 
-export default { revoke, isRevoked, deleteExpired, hashToken };
+// Todas as sessoes do usuario emitidas antes deste momento estao encerradas. Nulo quando nada as
+// encerrou; usuario inexistente tambem volta nulo, e quem barra a conta e o loadContext.
+async function findSessionsValidFrom(userId: bigint): Promise<Date | null> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { sessionsValidFrom: true },
+  });
+
+  return user?.sessionsValidFrom ?? null;
+}
+
+export default { revoke, isRevoked, deleteExpired, hashToken, findSessionsValidFrom };

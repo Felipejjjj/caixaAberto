@@ -1,4 +1,7 @@
+import { randomUUID } from 'node:crypto';
+
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -8,7 +11,8 @@ import {
   passwordResetNotifier,
   type PasswordResetMessage,
 } from '../../src/notifications/passwordResetNotifier.js';
-import { createUser } from '../factories/index.js';
+import { createMembership, createOrganization, createUser } from '../factories/index.js';
+import { createAuthorizationHeader } from '../helpers/auth.js';
 
 const SENHA_ANTIGA = 'senhaAntiga@123';
 const SENHA_NOVA = 'senhaNova@456';
@@ -249,5 +253,82 @@ describe('redefinição de senha (US02)', () => {
 
     expect(response.status).toBe(202);
     expect(response.body).toEqual({ mensagem: MENSAGEM_GENERICA });
+  });
+});
+
+// Sessao aberta um minuto antes: o iat do JWT tem precisao de segundos, e um token emitido no mesmo
+// segundo da troca continuaria valendo. Assinar no passado deixa o teste independente do relogio.
+function sessaoAbertaHaUmMinuto(user: { id: bigint; email: string }): string {
+  const token = jwt.sign(
+    { email: user.email, iat: Math.floor(Date.now() / 1000) - 60 },
+    process.env.JWT_SECRET!,
+    { subject: user.id.toString(), expiresIn: '1d', jwtid: randomUUID() },
+  );
+
+  return `Bearer ${token}`;
+}
+
+function consultarContexto(authorization: string) {
+  return request(createApp()).get('/test/contexto').set('Authorization', authorization);
+}
+
+async function redefinirSenhaDe(email: string) {
+  const enviados = capturarEnvios();
+  await solicitar({ email });
+
+  return redefinir({ token: tokenDoLink(enviados[0]!.link), novaSenha: SENHA_NOVA });
+}
+
+describe('sessões abertas na redefinição de senha (US02)', () => {
+  it('encerra as sessões abertas com a senha antiga', async () => {
+    const organization = await createOrganization();
+    const usuario = await criarUsuario();
+    await createMembership({ userId: usuario.id, organizationId: organization.id });
+    const sessaoAntiga = sessaoAbertaHaUmMinuto(usuario);
+    expect((await consultarContexto(sessaoAntiga)).status).toBe(200);
+
+    expect((await redefinirSenhaDe(usuario.email)).status).toBe(200);
+
+    const depois = await consultarContexto(sessaoAntiga);
+    expect(depois.status).toBe(401);
+    expect(depois.body.erro).toBe('Sessão encerrada pela troca de senha. Entre novamente.');
+  });
+
+  it('aceita o login feito logo depois da troca', async () => {
+    const organization = await createOrganization();
+    const usuario = await criarUsuario();
+    await createMembership({ userId: usuario.id, organizationId: organization.id });
+
+    await redefinirSenhaDe(usuario.email);
+    const login = await entrar(usuario.email, SENHA_NOVA);
+
+    expect(login.status).toBe(200);
+    expect((await consultarContexto(`Bearer ${login.body.token}`)).status).toBe(200);
+  });
+
+  it('não encerra sessões de outros usuários', async () => {
+    const organization = await createOrganization();
+    const usuario = await criarUsuario();
+    const colega = await criarUsuario();
+    await createMembership({ userId: usuario.id, organizationId: organization.id });
+    await createMembership({ userId: colega.id, organizationId: organization.id });
+    const sessaoDoColega = sessaoAbertaHaUmMinuto(colega);
+
+    await redefinirSenhaDe(usuario.email);
+
+    expect((await consultarContexto(sessaoDoColega)).status).toBe(200);
+  });
+
+  it('sem redefinição, sessões antigas seguem valendo', async () => {
+    const organization = await createOrganization();
+    const usuario = await criarUsuario();
+    await createMembership({ userId: usuario.id, organizationId: organization.id });
+    capturarEnvios();
+
+    // So pedir o link nao derruba nada: a senha antiga ainda vale ate a troca.
+    await solicitar({ email: usuario.email });
+
+    expect((await consultarContexto(sessaoAbertaHaUmMinuto(usuario))).status).toBe(200);
+    expect((await consultarContexto(createAuthorizationHeader(usuario))).status).toBe(200);
   });
 });
