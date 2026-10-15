@@ -167,7 +167,9 @@ Sucesso `200`:
 ```
 
 A nova senha tem de 8 caracteres a 72 bytes, o limite do bcrypt. Depois da troca, a senha antiga
-deixa de funcionar no login. Uma senha recusada não consome o link.
+deixa de funcionar no login e as sessões abertas antes dela são encerradas: qualquer rota
+autenticada passa a responder `401` com `Sessão encerrada pela troca de senha. Entre novamente.`
+para esses tokens. Uma senha recusada não consome o link.
 
 Erros:
 

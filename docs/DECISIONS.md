@@ -161,6 +161,10 @@ no Render para algo que a proposta não prevê. Se a decisão mudar, basta troca
 interface, sem tocar no serviço, nas regras do token ou nos testes, que substituem o envio por um
 dublê e leem o link dele.
 
-As sessões abertas antes da troca de senha continuam válidas até expirarem, em até um dia. Derrubá-las
-exigiria que a autenticação conferisse a data da última troca de senha, uma mudança no middleware
-de autenticação que ficou fora desta história.
+A troca de senha também encerra as sessões abertas antes dela, combinado com o Murilo, que mantém o
+middleware de autenticação. `USUARIO.sessoes_validas_desde` guarda o momento da troca, e o
+`authenticate` recusa o token emitido antes disso. A comparação usa o `iat` do JWT, que só tem
+precisão de segundos, e por isso é feita pelo segundo inteiro: o login feito logo depois da troca,
+ainda no mesmo segundo, continua valendo. O custo é aceitar um token emitido nesse mesmo segundo
+antes da troca. A alternativa exata, um contador de versão gravado no token, mudaria a geração do
+JWT e o login, e o ganho de menos de um segundo não pagou essa mudança.
