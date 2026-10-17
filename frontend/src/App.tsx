@@ -4,6 +4,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { RotaTesoureiro } from './components/RotaTesoureiro';
 import { CategoryReportPage } from './pages/CategoryReportPage';
 import { LoginPage } from './pages/LoginPage';
+import { MembersPage } from './pages/MembersPage';
 import { MonthlySummaryPage } from './pages/MonthlySummaryPage';
 import { NewInflowPage } from './pages/NewInflowPage';
 import { NewOutflowPage } from './pages/NewOutflowPage';
@@ -32,6 +33,7 @@ export function App() {
         <Route path="/resumo" element={<MonthlySummaryPage />} />
         <Route path="/extrato" element={<StatementPage />} />
         <Route path="/relatorios/categorias" element={<CategoryReportPage />} />
+        <Route path="/organizacao/membros" element={<MembersPage />} />
       </Route>
 
       <Route path="/" element={<Navigate to="/lancamentos" replace />} />

@@ -70,3 +70,7 @@ export function formatarNomeDoMes(mes: string): string {
 
   return data.toLocaleDateString('pt-BR', { month: 'long' });
 }
+
+export function rotuloPapel(papel: 'TESOUREIRO' | 'CONSULTOR'): string {
+  return papel === 'TESOUREIRO' ? 'Tesoureiro' : 'Consultor';
+}
