@@ -22,8 +22,8 @@ interface MemberListResponse {
   dados: Member[];
 }
 
-// GET /organizacoes/{id}/membros exige o id real da organização no caminho. O seletor da US13
-// persiste o contexto escolhido; o fallback mantém esta página testável fora do shell protegido.
+// GET /organizacoes/{id}/membros exige o id real da organizacao no caminho. O seletor da US13
+// persiste o contexto escolhido; o fallback mantem esta pagina testavel fora do shell protegido.
 interface OrganizacaoDoUsuario {
   vinculoId: string;
   papel: Papel;
@@ -82,9 +82,7 @@ export function MembersPage() {
         if (cancelado) return;
         setOrganizacaoId(id);
 
-        const resposta = await apiRequest<MemberListResponse>(
-          `/organizacoes/${id}/membros`,
-        );
+        const resposta = await apiRequest<MemberListResponse>(`/organizacoes/${id}/membros`);
         if (!cancelado) setMembros(resposta.dados);
       } catch (error) {
         if (!cancelado) {

@@ -36,11 +36,7 @@ function validar(values: FormValues): FieldErrors {
   if (!values.descricao.trim()) erros.descricao = 'Informe a descrição da organização.';
   if (!values.inicioGestao) erros.inicioGestao = 'Informe o início da gestão.';
   if (!values.fimGestao) erros.fimGestao = 'Informe o fim da gestão.';
-  if (
-    values.inicioGestao &&
-    values.fimGestao &&
-    values.fimGestao < values.inicioGestao
-  ) {
+  if (values.inicioGestao && values.fimGestao && values.fimGestao < values.inicioGestao) {
     erros.fimGestao = 'A data final deve ser igual ou posterior à data inicial.';
   }
 

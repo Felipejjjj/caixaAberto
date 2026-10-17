@@ -36,50 +36,78 @@ function aplicarSelecao(
   return escolhida;
 }
 
+async function buscarOrganizacoes(organizacaoPreferidaId?: string) {
+  const resposta = await apiRequest<OrganizacoesDoUsuarioResponse>('/users/me/organizacoes');
+  const atualizadas = resposta.dados;
+  const escolhida = aplicarSelecao(atualizadas, organizacaoPreferidaId);
+
+  if (!escolhida) {
+    localStorage.removeItem('caixaAberto.organizationId');
+    localStorage.removeItem('caixaAberto.papel');
+  }
+
+  return { atualizadas, escolhida };
+}
+
+function mensagemDeErro(error: unknown): string {
+  return error instanceof ApiError ? error.message : 'Não foi possível carregar as organizações';
+}
+
 export function OrganizationProvider({ children }: { children: ReactNode }) {
   const [organizacoes, setOrganizacoes] = useState<OrganizacaoDoUsuario[]>([]);
-  const [organizacaoSelecionada, setOrganizacaoSelecionada] =
-    useState<OrganizacaoDoUsuario | null>(null);
+  const [organizacaoSelecionada, setOrganizacaoSelecionada] = useState<OrganizacaoDoUsuario | null>(
+    null,
+  );
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
+  // O carregando so vale para a primeira leitura. Depois de salvar uma organizacao a lista e
+  // relida sem voltar a ele, para a area protegida nao desmontar o formulario no meio do envio.
   const atualizarOrganizacoes = useCallback(async (organizacaoPreferidaId?: string) => {
-    setCarregando(true);
-    setErro(null);
-
     try {
-      const resposta = await apiRequest<OrganizacoesDoUsuarioResponse>('/users/me/organizacoes');
-      const atualizadas = resposta.dados;
-      const escolhida = aplicarSelecao(atualizadas, organizacaoPreferidaId);
-
-      if (!escolhida) {
-        localStorage.removeItem('caixaAberto.organizationId');
-        localStorage.removeItem('caixaAberto.papel');
-      }
-
+      const { atualizadas, escolhida } = await buscarOrganizacoes(organizacaoPreferidaId);
       setOrganizacoes(atualizadas);
       setOrganizacaoSelecionada(escolhida);
+      setErro(null);
     } catch (error) {
-      setErro(
-        error instanceof ApiError ? error.message : 'Não foi possível carregar as organizações',
-      );
-    } finally {
-      setCarregando(false);
+      setErro(mensagemDeErro(error));
     }
   }, []);
 
   useEffect(() => {
-    void atualizarOrganizacoes();
-  }, [atualizarOrganizacoes]);
+    let cancelado = false;
 
-  const selecionarOrganizacao = useCallback((id: string) => {
-    const escolhida = organizacoes.find((item) => item.organizacao.id === id);
-    if (!escolhida) return;
+    async function carregar() {
+      try {
+        const { atualizadas, escolhida } = await buscarOrganizacoes();
+        if (cancelado) return;
+        setOrganizacoes(atualizadas);
+        setOrganizacaoSelecionada(escolhida);
+      } catch (error) {
+        if (!cancelado) setErro(mensagemDeErro(error));
+      } finally {
+        if (!cancelado) setCarregando(false);
+      }
+    }
 
-    setOrganizationId(id);
-    setPapel(escolhida.papel);
-    setOrganizacaoSelecionada(escolhida);
-  }, [organizacoes]);
+    void carregar();
+
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  const selecionarOrganizacao = useCallback(
+    (id: string) => {
+      const escolhida = organizacoes.find((item) => item.organizacao.id === id);
+      if (!escolhida) return;
+
+      setOrganizationId(id);
+      setPapel(escolhida.papel);
+      setOrganizacaoSelecionada(escolhida);
+    },
+    [organizacoes],
+  );
 
   const value = useMemo(
     () => ({
