@@ -6,7 +6,7 @@ import { TabelaEsqueleto } from '../components/ui/TabelaEsqueleto';
 import { TabelaRolavel } from '../components/ui/TabelaRolavel';
 import { formatarData, rotuloPapel } from '../lib/formato';
 import { ApiError, apiRequest } from '../lib/httpClient';
-import { podeEscrever } from '../lib/session';
+import { getOrganizationId, podeEscrever } from '../lib/session';
 import type { Papel } from '../lib/session';
 import { useTituloPagina } from '../lib/useTituloPagina';
 
@@ -22,10 +22,8 @@ interface MemberListResponse {
   dados: Member[];
 }
 
-// GET /organizacoes/{id}/membros exige o id real da organizacao no caminho; nao existe
-// uma rota "atual" para membros. US13 (GET /users/me/organizacoes) e quem devolve esse id,
-// junto do papel do usuario no vinculo. Assume se o primeiro vinculo ativo, como o resto do
-// app ja faz hoje (nenhuma tela envia X-Organization-Id para o caso de multiplos vinculos).
+// GET /organizacoes/{id}/membros exige o id real da organização no caminho. O seletor da US13
+// persiste o contexto escolhido; o fallback mantém esta página testável fora do shell protegido.
 interface OrganizacaoDoUsuario {
   vinculoId: string;
   papel: Papel;
@@ -64,11 +62,16 @@ export function MembersPage() {
       setErro(null);
 
       try {
-        const organizacoes =
-          await apiRequest<OrganizacoesDoUsuarioResponse>('/users/me/organizacoes');
-        const atual = organizacoes.dados[0];
+        const idPersistido = getOrganizationId();
+        let id = idPersistido;
 
-        if (!atual) {
+        if (!id) {
+          const organizacoes =
+            await apiRequest<OrganizacoesDoUsuarioResponse>('/users/me/organizacoes');
+          id = organizacoes.dados[0]?.organizacao.id ?? null;
+        }
+
+        if (!id) {
           if (!cancelado) {
             setErro('Nenhuma organização vinculada à sua conta.');
             setCarregando(false);
@@ -77,10 +80,10 @@ export function MembersPage() {
         }
 
         if (cancelado) return;
-        setOrganizacaoId(atual.organizacao.id);
+        setOrganizacaoId(id);
 
         const resposta = await apiRequest<MemberListResponse>(
-          `/organizacoes/${atual.organizacao.id}/membros`,
+          `/organizacoes/${id}/membros`,
         );
         if (!cancelado) setMembros(resposta.dados);
       } catch (error) {
