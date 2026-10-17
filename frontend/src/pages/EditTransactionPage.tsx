@@ -61,6 +61,9 @@ export function EditTransactionPage() {
   const [lancamento, setLancamento] = useState<TransactionDetail | null>(null);
   const [values, setValues] = useState<FormValues | null>(null);
   const [errosCampos, setErrosCampos] = useState<FieldErrors>({});
+  // O erro de leitura troca a tela inteira; o de envio fica junto do formulario para nao perder o
+  // que o tesoureiro ja digitou.
+  const [erroCarregamento, setErroCarregamento] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
@@ -85,7 +88,7 @@ export function EditTransactionPage() {
         });
       } catch (error) {
         if (!cancelado) {
-          setErro(
+          setErroCarregamento(
             error instanceof ApiError ? error.message : 'Não foi possível carregar o lançamento.',
           );
         }
@@ -162,10 +165,10 @@ export function EditTransactionPage() {
     );
   }
 
-  if (erro || !lancamento || !values) {
+  if (erroCarregamento || !lancamento || !values) {
     return (
       <main>
-        <p role="alert">{erro ?? 'Lançamento não encontrado.'}</p>
+        <p role="alert">{erroCarregamento ?? 'Lançamento não encontrado.'}</p>
         <p>
           <Link to={id ? `/lancamentos/${id}` : '/lancamentos'}>Voltar</Link>
         </p>

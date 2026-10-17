@@ -1,5 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 
 import { MembersPage } from '../src/pages/MembersPage';
@@ -28,6 +29,15 @@ const MEMBROS = {
   ],
 };
 
+// A tela tem o link para cadastrar usuario (US03), entao precisa de um router em volta.
+function renderizar() {
+  return render(
+    <MemoryRouter>
+      <MembersPage />
+    </MemoryRouter>,
+  );
+}
+
 // US12: consultar membros ativos e papeis.
 describe('MembersPage', () => {
   it('lista os membros ativos da organização com papel e data do vínculo (US12)', async () => {
@@ -37,7 +47,7 @@ describe('MembersPage', () => {
       '/organizacoes/2/membros': { body: MEMBROS },
     });
 
-    render(<MembersPage />);
+    renderizar();
 
     const tabela = await screen.findByRole('region', { name: 'Membros da organização' });
     expect(within(tabela).getByText('Maria')).toBeInTheDocument();
@@ -52,7 +62,7 @@ describe('MembersPage', () => {
       '/organizacoes/2/membros': { body: { dados: [] } },
     });
 
-    render(<MembersPage />);
+    renderizar();
 
     expect(await screen.findByText('Nenhum membro vinculado')).toBeInTheDocument();
   });
@@ -64,7 +74,7 @@ describe('MembersPage', () => {
       '/organizacoes/2/membros': { status: 500, body: { erro: 'Erro interno do servidor' } },
     });
 
-    render(<MembersPage />);
+    renderizar();
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Erro interno do servidor');
   });
@@ -76,7 +86,7 @@ describe('MembersPage', () => {
       '/organizacoes/2/membros': { body: MEMBROS },
     });
 
-    render(<MembersPage />);
+    renderizar();
 
     await screen.findByText('Maria');
 
@@ -93,7 +103,7 @@ describe('MembersPage', () => {
     });
     const usuario = userEvent.setup();
 
-    render(<MembersPage />);
+    renderizar();
 
     await screen.findByText('Maria');
 
@@ -127,7 +137,7 @@ describe('MembersPage', () => {
     });
     const usuario = userEvent.setup();
 
-    render(<MembersPage />);
+    renderizar();
 
     await screen.findByText('Maria');
 
@@ -155,7 +165,7 @@ describe('MembersPage', () => {
     });
     const usuario = userEvent.setup();
 
-    render(<MembersPage />);
+    renderizar();
 
     await screen.findByText('Maria');
 
@@ -189,7 +199,7 @@ describe('MembersPage', () => {
     });
     const usuario = userEvent.setup();
 
-    render(<MembersPage />);
+    renderizar();
 
     await screen.findByText('Maria');
 
