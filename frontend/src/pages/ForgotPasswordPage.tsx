@@ -44,9 +44,7 @@ export function ForgotPasswordPage() {
       setMensagem(resposta.mensagem);
     } catch (error) {
       setErro(
-        error instanceof ApiError
-          ? error.message
-          : 'Não foi possível solicitar a recuperação.',
+        error instanceof ApiError ? error.message : 'Não foi possível solicitar a recuperação.',
       );
     } finally {
       setEnviando(false);
@@ -60,8 +58,8 @@ export function ForgotPasswordPage() {
       <main>
         <h1>Esqueci minha senha</h1>
         <p>
-          Informe o e-mail usado no cadastro. Se houver uma conta, enviaremos um link para criar
-          uma nova senha.
+          Informe o e-mail usado no cadastro. Se houver uma conta, enviaremos um link para criar uma
+          nova senha.
         </p>
 
         <form onSubmit={handleSubmit} noValidate className="formulario-coluna">
