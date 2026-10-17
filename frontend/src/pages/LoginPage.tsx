@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { AppFooter, AppHeader } from '../components/AppHeader';
 import { ApiError, apiRequest } from '../lib/httpClient';
@@ -129,6 +129,10 @@ export function LoginPage() {
             {enviando ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
+
+        <p>
+          <Link to="/esqueci-senha">Esqueci minha senha</Link>
+        </p>
       </main>
 
       <AppFooter />
