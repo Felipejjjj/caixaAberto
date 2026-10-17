@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom';
 import { ReceiptDetailPreview } from '../components/ReceiptAttachment';
 import { formatarData, formatarMoeda, rotuloStatus, valorComSinal } from '../lib/formato';
 import { ApiError, apiRequest } from '../lib/httpClient';
+import { podeEscrever } from '../lib/session';
 import { useTituloPagina } from '../lib/useTituloPagina';
 
 type TransactionType = 'ENTRADA' | 'SAIDA';
@@ -29,6 +30,12 @@ interface TransactionDetail {
   } | null;
 }
 
+interface EstornoResponse {
+  id: string;
+  status: 'ESTORNADO';
+  dataEstorno: string;
+}
+
 const RECIPIENT_LABEL = 'Destinatário';
 const SOURCE_LABEL = 'Origem';
 const NAO_INFORMADO = 'Não informado';
@@ -40,6 +47,11 @@ export function TransactionDetailPage() {
   const [lancamento, setLancamento] = useState<TransactionDetail | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(true);
+
+  const [confirmandoEstorno, setConfirmandoEstorno] = useState(false);
+  const [estornando, setEstornando] = useState(false);
+  const [erroEstorno, setErroEstorno] = useState<string | null>(null);
+  const [mensagem, setMensagem] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -71,6 +83,29 @@ export function TransactionDetailPage() {
     };
   }, [id]);
 
+  async function handleEstornar() {
+    if (!lancamento) return;
+
+    setEstornando(true);
+    setErroEstorno(null);
+
+    try {
+      const estorno = await apiRequest<EstornoResponse>(`/lancamentos/${lancamento.id}/estorno`, {
+        method: 'POST',
+      });
+
+      setLancamento((atual) => (atual ? { ...atual, status: estorno.status } : atual));
+      setMensagem('Lançamento estornado.');
+      setConfirmandoEstorno(false);
+    } catch (error) {
+      setErroEstorno(
+        error instanceof ApiError ? error.message : 'Não foi possível estornar o lançamento',
+      );
+    } finally {
+      setEstornando(false);
+    }
+  }
+
   if (carregando) {
     return (
       <main>
@@ -90,6 +125,8 @@ export function TransactionDetailPage() {
     );
   }
 
+  const podeEstornar = podeEscrever() && lancamento.status === 'ATIVO';
+
   return (
     <main>
       <div className="cabecalho-pagina">
@@ -105,7 +142,41 @@ export function TransactionDetailPage() {
             )}
           </p>
         </div>
+
+        {podeEstornar && !confirmandoEstorno && (
+          <div className="acoes">
+            <button
+              type="button"
+              className="acao"
+              data-variante="secundario"
+              onClick={() => setConfirmandoEstorno(true)}
+            >
+              Estornar lançamento
+            </button>
+          </div>
+        )}
+
+        {podeEstornar && confirmandoEstorno && (
+          <div className="acoes" role="group" aria-label="Confirmar estorno do lançamento">
+            <span>Confirmar estorno?</span>
+            <button type="button" className="acao" disabled={estornando} onClick={handleEstornar}>
+              {estornando ? 'Estornando...' : 'Confirmar'}
+            </button>
+            <button
+              type="button"
+              className="acao"
+              data-variante="secundario"
+              disabled={estornando}
+              onClick={() => setConfirmandoEstorno(false)}
+            >
+              Cancelar
+            </button>
+          </div>
+        )}
       </div>
+
+      {mensagem && <p role="status">{mensagem}</p>}
+      {erroEstorno && <p role="alert">{erroEstorno}</p>}
 
       {lancamento.status === 'ESTORNADO' && (
         <p role="alert">
