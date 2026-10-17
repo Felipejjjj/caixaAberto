@@ -1,6 +1,4 @@
 const TOKEN_KEY = 'caixaAberto.token';
-// Chave legada: a organizacao passou a vir do contexto autenticado no backend e o login nao a
-// grava mais. Continua sendo limpa para nao deixar residuo em quem ja usou as versoes anteriores.
 const ORGANIZATION_ID_KEY = 'caixaAberto.organizationId';
 const PAPEL_KEY = 'caixaAberto.papel';
 
@@ -12,6 +10,14 @@ export function getToken(): string | null {
 
 export function setToken(token: string): void {
   localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function getOrganizationId(): string | null {
+  return localStorage.getItem(ORGANIZATION_ID_KEY);
+}
+
+export function setOrganizationId(organizationId: string): void {
+  localStorage.setItem(ORGANIZATION_ID_KEY, organizationId);
 }
 
 export function getPapel(): Papel | null {

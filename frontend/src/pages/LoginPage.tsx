@@ -4,8 +4,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { AppFooter, AppHeader } from '../components/AppHeader';
 import { ApiError, apiRequest } from '../lib/httpClient';
-import { clearSession, setPapel, setToken } from '../lib/session';
-import type { Papel } from '../lib/session';
+import { clearSession, setToken } from '../lib/session';
 import { useTituloPagina } from '../lib/useTituloPagina';
 
 interface LoginResponse {
@@ -15,11 +14,6 @@ interface LoginResponse {
     name: string;
     email: string;
   };
-}
-
-interface ContextResponse {
-  organizacaoId: string;
-  papel: Papel;
 }
 
 // A API hospedada hiberna depois de 15 minutos parada e a primeira requisicao leva
@@ -64,16 +58,6 @@ export function LoginPage() {
 
       clearSession();
       setToken(resposta.token);
-
-      // O papel decide quais acoes aparecem; sem ele a tela ofereceria escrita a quem so consulta.
-      // Se a leitura do contexto falhar, a sessao segue sem papel e a interface fecha as acoes de
-      // escrita. Quem autoriza de verdade e o servidor; aqui o erro pende para o lado seguro.
-      try {
-        const contexto = await apiRequest<ContextResponse>('/organizacoes/atual/contexto');
-        setPapel(contexto.papel);
-      } catch {
-        // Entrar sem o papel resolvido e melhor do que barrar o acesso a area de consulta.
-      }
 
       navigate('/lancamentos', { replace: true });
     } catch (error) {

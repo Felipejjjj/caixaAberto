@@ -9,6 +9,7 @@ import { MembersPage } from './pages/MembersPage';
 import { MonthlySummaryPage } from './pages/MonthlySummaryPage';
 import { NewInflowPage } from './pages/NewInflowPage';
 import { NewOutflowPage } from './pages/NewOutflowPage';
+import { OrganizationFormPage } from './pages/OrganizationFormPage';
 import { PublicLinkManagementPage } from './pages/PublicLinkManagementPage';
 import { PublicTransparencyPage } from './pages/PublicTransparencyPage';
 import { StatementPage } from './pages/StatementPage';
@@ -23,10 +24,12 @@ export function App() {
 
       <Route element={<ProtectedRoute />}>
         <Route path="/lancamentos" element={<TransactionsListPage />} />
+        <Route path="/organizacao/nova" element={<OrganizationFormPage modo="criar" />} />
 
         <Route element={<RotaTesoureiro />}>
           <Route path="/lancamentos/entrada" element={<NewInflowPage />} />
           <Route path="/lancamentos/saida" element={<NewOutflowPage />} />
+          <Route path="/organizacao/editar" element={<OrganizationFormPage modo="editar" />} />
           <Route path="/organizacao/link-publico" element={<PublicLinkManagementPage />} />
         </Route>
 

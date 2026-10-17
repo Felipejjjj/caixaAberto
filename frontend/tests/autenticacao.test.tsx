@@ -7,6 +7,22 @@ import { ProtectedRoute } from '../src/components/ProtectedRoute';
 import { LoginPage } from '../src/pages/LoginPage';
 import { autenticar, stubApi } from './helpers/api';
 
+// A area protegida le as organizacoes do usuario antes de mostrar a pagina (US13).
+const ORGANIZACAO_DO_USUARIO = {
+  vinculoId: '12',
+  papel: 'TESOUREIRO',
+  dataVinculo: '2026-09-24',
+  organizacao: {
+    id: '2',
+    nome: 'Comissão',
+    descricao: 'Caixa da comissão',
+    inicioGestao: '2026-01-01',
+    fimGestao: '2026-12-31',
+    linkPublico: null,
+    transparenciaAtiva: false,
+  },
+};
+
 function renderizarLogin() {
   return render(
     <MemoryRouter initialEntries={['/login']}>
@@ -88,12 +104,12 @@ describe('ProtectedRoute', () => {
     expect(screen.queryByRole('heading', { name: 'Lançamentos' })).not.toBeInTheDocument();
   });
 
-  it('deixa passar quem tem sessão', () => {
+  it('deixa passar quem tem sessão', async () => {
     autenticar();
-    stubApi({});
+    stubApi({ '/users/me/organizacoes': { body: { dados: [ORGANIZACAO_DO_USUARIO] } } });
     renderizarAreaProtegida();
 
-    expect(screen.getByRole('heading', { name: 'Lançamentos' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Lançamentos' })).toBeInTheDocument();
   });
 
   it('encerra a sessão e volta ao login ao sair (CA-F01-04)', async () => {

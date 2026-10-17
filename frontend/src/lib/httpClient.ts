@@ -1,4 +1,4 @@
-import { clearSession, getToken } from './session';
+import { clearSession, getOrganizationId, getToken } from './session';
 
 const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3000';
 
@@ -49,6 +49,9 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     }
 
     headers.Authorization = `Bearer ${token}`;
+
+    const organizationId = getOrganizationId();
+    if (organizationId) headers['X-Organization-Id'] = organizationId;
   }
 
   const response = await fetch(`${API_URL}${path}`, {
@@ -88,6 +91,9 @@ export async function apiUploadRequest<T>(
     }
 
     headers.Authorization = `Bearer ${token}`;
+
+    const organizationId = getOrganizationId();
+    if (organizationId) headers['X-Organization-Id'] = organizationId;
   }
 
   const response = await fetch(`${API_URL}${path}`, {
@@ -118,9 +124,11 @@ export async function apiBlobRequest(path: string): Promise<Blob> {
     throw new ApiError(401, 'Sessão expirada. Faça login novamente.');
   }
 
+  const organizationId = getOrganizationId();
   const response = await fetch(`${API_URL}${path}`, {
     headers: {
       Authorization: `Bearer ${token}`,
+      ...(organizationId ? { 'X-Organization-Id': organizationId } : {}),
     },
   });
 
