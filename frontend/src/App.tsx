@@ -4,6 +4,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { RotaTesoureiro } from './components/RotaTesoureiro';
 import { CategoriesPage } from './pages/CategoriesPage';
 import { CategoryReportPage } from './pages/CategoryReportPage';
+import { EditTransactionPage } from './pages/EditTransactionPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { LoginPage } from './pages/LoginPage';
 import { MembersPage } from './pages/MembersPage';
@@ -17,6 +18,7 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { StatementPage } from './pages/StatementPage';
 import { TransactionDetailPage } from './pages/TransactionDetailPage';
 import { TransactionsListPage } from './pages/TransactionsListPage';
+import { UserRegistrationPage } from './pages/UserRegistrationPage';
 
 export function App() {
   return (
@@ -33,8 +35,10 @@ export function App() {
         <Route element={<RotaTesoureiro />}>
           <Route path="/lancamentos/entrada" element={<NewInflowPage />} />
           <Route path="/lancamentos/saida" element={<NewOutflowPage />} />
+          <Route path="/lancamentos/:id/editar" element={<EditTransactionPage />} />
           <Route path="/organizacao/editar" element={<OrganizationFormPage modo="editar" />} />
           <Route path="/organizacao/link-publico" element={<PublicLinkManagementPage />} />
+          <Route path="/organizacao/usuarios/novo" element={<UserRegistrationPage />} />
         </Route>
 
         <Route path="/lancamentos/:id" element={<TransactionDetailPage />} />

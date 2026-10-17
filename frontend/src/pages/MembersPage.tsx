@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 
 import { EstadoVazio } from '../components/ui/EstadoVazio';
 import { TabelaEsqueleto } from '../components/ui/TabelaEsqueleto';
@@ -160,6 +161,11 @@ export function MembersPage() {
             Quem tem acesso à organização e o papel de cada um.
           </p>
         </div>
+        {escrita && (
+          <Link className="acao" to="/organizacao/usuarios/novo">
+            Cadastrar usuário
+          </Link>
+        )}
       </div>
 
       {escrita && (

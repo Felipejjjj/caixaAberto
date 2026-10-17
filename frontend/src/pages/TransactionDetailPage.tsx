@@ -145,6 +145,13 @@ export function TransactionDetailPage() {
 
         {podeEstornar && !confirmandoEstorno && (
           <div className="acoes">
+            <Link
+              to={`/lancamentos/${lancamento.id}/editar`}
+              className="acao"
+              data-variante="secundario"
+            >
+              Corrigir lançamento
+            </Link>
             <button
               type="button"
               className="acao"
