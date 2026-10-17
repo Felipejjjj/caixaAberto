@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { RotaTesoureiro } from './components/RotaTesoureiro';
+import { CategoriesPage } from './pages/CategoriesPage';
 import { CategoryReportPage } from './pages/CategoryReportPage';
 import { LoginPage } from './pages/LoginPage';
 import { MembersPage } from './pages/MembersPage';
@@ -34,6 +35,7 @@ export function App() {
         <Route path="/extrato" element={<StatementPage />} />
         <Route path="/relatorios/categorias" element={<CategoryReportPage />} />
         <Route path="/organizacao/membros" element={<MembersPage />} />
+        <Route path="/organizacao/categorias" element={<CategoriesPage />} />
       </Route>
 
       <Route path="/" element={<Navigate to="/lancamentos" replace />} />

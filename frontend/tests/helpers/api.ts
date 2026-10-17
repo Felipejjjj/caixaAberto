@@ -36,11 +36,14 @@ export function stubApi(rotas: Rotas) {
       : { status: 404, body: { erro: 'Rota nao configurada' } };
     const status = resposta.status ?? 200;
 
+    // Response com status 204/205/304 nao pode ter corpo: o fetch nativo rejeita a
+    // construcao quando ha corpo nesses casos, mesmo um objeto vazio serializado.
+    const semCorpo = status === 204 || status === 205 || status === 304;
     const corpoResposta = 'body' in resposta ? resposta.body : {};
 
-    return new Response(JSON.stringify(corpoResposta), {
+    return new Response(semCorpo ? null : JSON.stringify(corpoResposta), {
       status,
-      headers: { 'Content-Type': 'application/json' },
+      headers: semCorpo ? undefined : { 'Content-Type': 'application/json' },
     });
   });
 

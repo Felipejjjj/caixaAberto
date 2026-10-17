@@ -9,6 +9,7 @@ const LINKS = [
   { to: '/resumo', rotulo: 'Resumo' },
   { to: '/relatorios/categorias', rotulo: 'Relatório' },
   { to: '/organizacao/membros', rotulo: 'Membros' },
+  { to: '/organizacao/categorias', rotulo: 'Categorias' },
   { to: '/organizacao/link-publico', rotulo: 'Link público', somenteEscrita: true },
 ];
 
