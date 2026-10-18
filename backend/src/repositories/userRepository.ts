@@ -1,4 +1,5 @@
 import { prisma } from '../database/client.js';
+import type { Role } from '../domain/auth-context.js';
 
 async function findAll() {
   return prisma.user.findMany({
@@ -51,6 +52,41 @@ async function findByEmail(email: string) {
   return prisma.user.findUnique({
     where: {
       email,
+    },
+  });
+}
+
+async function findByEmailIgnoringCase(email: string) {
+  return prisma.user.findFirst({
+    where: { email: { equals: email, mode: 'insensitive' } },
+    select: { id: true },
+  });
+}
+
+// Conta e vinculo numa so escrita: se o vinculo falhar, a conta nao fica criada sem organizacao.
+async function createWithMembership(data: {
+  name: string;
+  email: string;
+  passwordHash: string;
+  organizationId: bigint;
+  role: Role;
+  linkedAt: Date;
+}) {
+  return prisma.user.create({
+    data: {
+      name: data.name,
+      email: data.email,
+      passwordHash: data.passwordHash,
+      active: true,
+      createdAt: new Date(),
+      memberships: {
+        create: {
+          organizationId: data.organizationId,
+          role: data.role,
+          linkedAt: data.linkedAt,
+          active: true,
+        },
+      },
     },
   });
 }
@@ -136,7 +172,9 @@ export default {
   findByIdInOrganization,
   findById,
   findByEmail,
+  findByEmailIgnoringCase,
   create,
+  createWithMembership,
   update,
   deleteById,
   findOrganizationsByUser,
