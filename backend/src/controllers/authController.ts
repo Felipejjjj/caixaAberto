@@ -1,11 +1,14 @@
-import { Request, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
 import type { User } from '../generated/prisma/client.js';
 import type { AuthRequest } from '../middlewares/auth.js';
+import { getContexto } from '../middlewares/load-context.js';
 import revokedTokenRepository from '../repositories/revokedTokenRepository.js';
 import userRepository from '../repositories/userRepository.js';
+import { newAccountSchema } from '../schemas/new-account.js';
+import * as userAccountService from '../services/userAccountService.js';
 import { signUserToken } from '../utils/jwtUtils.js';
 
 function serializeUser(user: User) {
@@ -18,41 +21,18 @@ function serializeUser(user: User) {
   };
 }
 
-async function register(req: Request, res: Response) {
+// Mesmo cadastro de POST /users, com a resposta no formato antigo desta rota.
+async function register(req: Request, res: Response, next: NextFunction) {
   try {
-    const { name, email, password } = req.body;
+    const input = newAccountSchema.parse(req.body);
+    const user = await userAccountService.createAccountInOrganization(
+      getContexto(req).organizacaoId,
+      input,
+    );
 
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        erro: 'Preencha todos os campos',
-      });
-    }
-
-    const userExists = await userRepository.findByEmail(email);
-
-    if (userExists) {
-      return res.status(400).json({
-        erro: 'E-mail já cadastrado',
-      });
-    }
-
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    const user = await userRepository.create({
-      name,
-      email,
-      passwordHash,
-    });
-
-    return res.status(201).json({
-      user: serializeUser(user),
-    });
+    return res.status(201).json({ user: serializeUser(user) });
   } catch (error) {
-    console.error(error);
-
-    return res.status(500).json({
-      erro: 'Erro ao cadastrar usuário',
-    });
+    next(error);
   }
 }
 

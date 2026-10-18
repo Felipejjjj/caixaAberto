@@ -223,7 +223,10 @@ Compatibilidade atual: responde em `GET /users/:id` com propriedades em inglês.
 
 ### `POST /usuarios`
 
-Exige autenticação e papel `TESOUREIRO`.
+Exige autenticação e papel `TESOUREIRO`. Cria a conta ativa e já vinculada à organização do
+contexto, com o papel informado. `papel` é opcional e vale `CONSULTOR` quando omitido. A situação
+não é escolhida no cadastro: a conta sempre nasce ativa. O motivo do vínculo está em
+[`DECISIONS.md`](DECISIONS.md), em 2026-10-18.
 
 Request:
 
@@ -232,20 +235,23 @@ Request:
   "nome": "Ana",
   "email": "ana@exemplo.com",
   "senha": "senha-segura",
-  "ativo": true
+  "papel": "CONSULTOR"
 }
 ```
+
+Validação: nome de 1 a 150 caracteres, e-mail válido com até 150, senha de 8 a 72. O e-mail não
+pode repetir outro cadastro, mesmo que difira só em maiúsculas.
 
 Sucesso `201` devolve o usuário criado sem o hash da senha.
 
 Erros:
 
-- `400`: dados inválidos ou e-mail já cadastrado;
+- `400`: dados inválidos, com o motivo por campo em `campos`, ou e-mail já cadastrado;
 - `401`: autenticação ausente ou inválida;
 - `403`: papel sem permissão.
 
-Compatibilidade atual: `POST /users` usa propriedades em inglês. Também existe temporariamente
-`POST /auth/register`, sem autenticação; seu destino será definido em trabalho próprio.
+Compatibilidade atual: `POST /users` usa `name`, `email`, `password` e `papel`. `POST /auth/register`
+faz o mesmo cadastro, com as mesmas exigências, e devolve o usuário dentro de `user`.
 
 ### `PUT /usuarios/{id}`
 

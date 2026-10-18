@@ -168,3 +168,23 @@ precisão de segundos, e por isso é feita pelo segundo inteiro: o login feito l
 ainda no mesmo segundo, continua valendo. O custo é aceitar um token emitido nesse mesmo segundo
 antes da troca. A alternativa exata, um contador de versão gravado no token, mudaria a geração do
 JWT e o login, e o ganho de menos de um segundo não pagou essa mudança.
+
+## 2026-10-18: Conta criada já vinculada à organização
+
+A US03 pede que quem cadastra informe nome, e-mail e senha (CA-F03-01). Até aqui `POST /users`
+criava a conta sem vínculo com organização nenhuma: quem cadastrou conhecia a senha, e se outra
+organização vinculasse aquele e-mail depois, pela tela de membros, essa pessoa entrava e via os
+dados dela. A conta ficava solta, sem nenhuma organização responsável.
+
+A conta passa a nascer ativa e vinculada à organização de quem cadastra, com o papel escolhido no
+formulário (consultor se nada for dito), numa só escrita no banco. `POST /auth/register`, que fazia
+o mesmo cadastro por outro caminho, usa o mesmo serviço. A API também passou a validar o formato do
+e-mail, o tamanho da senha (8 a 72 caracteres, o teto do bcrypt) e a recusar e-mail que só difere
+de outro em maiúsculas.
+
+O risco que sobra: quem cadastrou continua sabendo a senha da conta. Se outra organização vincular
+aquele e-mail, quem cadastrou consegue entrar como a pessoa e ver também a organização nova. Fechar
+isso de vez exige que a própria pessoa defina a senha, por um convite com link, e isso depende de
+envio de e-mail, que a proposta deixa fora do escopo (ver a decisão de 2026-10-15). Com o envio
+real, o cadastro pode passar a gerar um token de definição de senha pela mesma interface
+`PasswordResetNotifier`, sem senha escolhida por terceiros.

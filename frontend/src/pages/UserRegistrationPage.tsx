@@ -2,23 +2,30 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 
+import { rotuloPapel } from '../lib/formato';
 import { ApiError, apiRequest } from '../lib/httpClient';
 import { useTituloPagina } from '../lib/useTituloPagina';
+
+type Papel = 'CONSULTOR' | 'TESOUREIRO';
 
 interface FormValues {
   nome: string;
   email: string;
   senha: string;
   confirmacao: string;
+  papel: Papel;
 }
 
-type FieldErrors = Partial<Record<keyof FormValues, string>>;
+type FieldErrors = Partial<Record<Exclude<keyof FormValues, 'papel'>, string>>;
+
+const PAPEIS: Papel[] = ['CONSULTOR', 'TESOUREIRO'];
 
 const VALORES_VAZIOS: FormValues = {
   nome: '',
   email: '',
   senha: '',
   confirmacao: '',
+  papel: 'CONSULTOR',
 };
 
 function emailValido(email: string): boolean {
@@ -53,7 +60,7 @@ export function UserRegistrationPage() {
 
   function alterar(campo: keyof FormValues, valor: string) {
     setValues((atuais) => ({ ...atuais, [campo]: valor }));
-    setErrosCampos((atuais) => ({ ...atuais, [campo]: undefined }));
+    if (campo !== 'papel') setErrosCampos((atuais) => ({ ...atuais, [campo]: undefined }));
     setErro(null);
     setMensagem(null);
   }
@@ -71,19 +78,22 @@ export function UserRegistrationPage() {
     setSalvando(true);
 
     try {
+      // A API cria a conta ativa e ja vinculada a esta organizacao, com o papel escolhido.
       await apiRequest('/users', {
         method: 'POST',
         body: {
           name: values.nome.trim(),
           email: values.email.trim(),
           password: values.senha,
-          active: true,
+          papel: values.papel,
         },
       });
 
       setValues(VALORES_VAZIOS);
       setErrosCampos({});
-      setMensagem('Usuário cadastrado com sucesso. Agora ele pode ser vinculado à organização.');
+      setMensagem(
+        `Conta de ${values.nome.trim()} criada e vinculada à organização como ${rotuloPapel(values.papel).toLowerCase()}.`,
+      );
     } catch (error) {
       setErro(error instanceof ApiError ? error.message : 'Não foi possível cadastrar o usuário.');
     } finally {
@@ -97,7 +107,8 @@ export function UserRegistrationPage() {
         <div>
           <h1>Cadastrar usuário</h1>
           <p className="cabecalho-pagina__apoio">
-            Crie uma conta para que a pessoa possa acessar o Caixa Aberto.
+            A conta é criada já vinculada a esta organização. Para dar acesso a quem já tem conta,
+            use o vínculo por e-mail na tela de membros.
           </p>
         </div>
       </div>
@@ -159,6 +170,21 @@ export function UserRegistrationPage() {
             aria-invalid={errosCampos.confirmacao ? true : undefined}
           />
           {errosCampos.confirmacao && <small role="alert">{errosCampos.confirmacao}</small>}
+        </label>
+
+        <label>
+          Papel na organização
+          <select
+            value={values.papel}
+            onChange={(event) => alterar('papel', event.target.value)}
+            disabled={salvando}
+          >
+            {PAPEIS.map((papel) => (
+              <option key={papel} value={papel}>
+                {rotuloPapel(papel)}
+              </option>
+            ))}
+          </select>
         </label>
 
         {erro && <p role="alert">{erro}</p>}
