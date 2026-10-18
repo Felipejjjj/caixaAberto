@@ -158,4 +158,32 @@ describe('SeletorData', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(campo).toHaveFocus();
   });
+
+  // No celular o "Ate" fica na coluna da direita, e o painel ancorado pela esquerda passava da
+  // borda da tela. O jsdom nao faz layout, entao a medida do painel e simulada.
+  it('ancora o painel pela direita quando ele passaria da borda da tela', async () => {
+    const usuario = userEvent.setup();
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
+      right: 495,
+    } as DOMRect);
+    vi.spyOn(document.documentElement, 'clientWidth', 'get').mockReturnValue(360);
+
+    render(<Hospedeiro />);
+    await usuario.click(screen.getByLabelText('De'));
+
+    expect(painel()).toHaveAttribute('data-alinhamento', 'direita');
+  });
+
+  it('mantém o painel ancorado pela esquerda quando ele cabe na tela', async () => {
+    const usuario = userEvent.setup();
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
+      right: 340,
+    } as DOMRect);
+    vi.spyOn(document.documentElement, 'clientWidth', 'get').mockReturnValue(360);
+
+    render(<Hospedeiro />);
+    await usuario.click(screen.getByLabelText('De'));
+
+    expect(painel()).not.toHaveAttribute('data-alinhamento');
+  });
 });

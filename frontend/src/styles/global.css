@@ -517,6 +517,11 @@ textarea:disabled {
   border-radius: var(--radius);
 }
 
+.campo-popover__painel[data-alinhamento='direita'] {
+  left: auto;
+  right: 0;
+}
+
 .campo-popover__cabecalho {
   display: flex;
   align-items: center;
@@ -753,6 +758,54 @@ button[data-variante='quieto']:hover:not(:disabled) {
   border-color: var(--color-ink);
   color: var(--color-ink);
   background: var(--color-surface);
+}
+
+/* So aparece no celular, quando os filtros da listagem ficam recolhidos. */
+.filtros__resumo {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  /* Um campo por linha nos cadastros; nos filtros de periodo, De e Ate lado a lado cortam a altura
+     do quadro pela metade. O botao de envio ocupa a linha inteira. */
+  .filtros__campos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .filtros__campos:has(.campo-popover) {
+    grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+    gap: var(--space-3) var(--space-2);
+  }
+
+  .filtros__campos > button[type='submit'] {
+    grid-column: 1 / -1;
+  }
+
+  .filtros__campos > button[type='submit'] {
+    width: 100%;
+  }
+
+  .filtros[data-recolhivel] .filtros__resumo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    font-size: 0.875rem;
+    color: var(--color-ink);
+  }
+
+  .filtros[data-recolhivel][data-aberto='true'] .filtros__resumo {
+    margin-bottom: var(--space-3);
+  }
+
+  .filtros[data-recolhivel][data-aberto='false'] .filtros__campos {
+    display: none;
+  }
+
+  .filtros__resumo button {
+    flex: 0 0 auto;
+    align-self: center;
+  }
 }
 
 /* ---------- Tabelas ---------- */

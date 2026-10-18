@@ -94,6 +94,23 @@ function montarQueryString(filtros: Filtros, pagina: number): string {
   return params.toString();
 }
 
+// No celular os filtros ficam recolhidos e esta frase diz o recorte em uso.
+function resumirFiltros(filtros: Filtros, categorias: CategoryOption[]): string {
+  const { dataInicio, dataFim } = filtros;
+  const periodo =
+    dataInicio && dataFim
+      ? `${formatarData(dataInicio)} a ${formatarData(dataFim)}`
+      : dataInicio
+        ? `A partir de ${formatarData(dataInicio)}`
+        : dataFim
+          ? `Até ${formatarData(dataFim)}`
+          : 'Todo o período';
+  const tipo = filtros.tipo === 'ENTRADA' ? 'entradas' : filtros.tipo === 'SAIDA' ? 'saídas' : '';
+  const categoria = categorias.find((item) => item.id === filtros.categoriaId)?.nome ?? '';
+
+  return [periodo, tipo, categoria].filter(Boolean).join(' · ');
+}
+
 function temFiltroAplicado(filtros: Filtros): boolean {
   return Boolean(filtros.dataInicio || filtros.dataFim || filtros.tipo || filtros.categoriaId);
 }
@@ -109,6 +126,7 @@ export function TransactionsListPage() {
   const [categorias, setCategorias] = useState<CategoryOption[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
+  const [filtrosAbertos, setFiltrosAbertos] = useState(false);
 
   useEffect(() => {
     let cancelado = false;
@@ -195,10 +213,23 @@ export function TransactionsListPage() {
       </div>
 
       <form onSubmit={handleSubmit}>
-        <fieldset className="filtros">
+        <fieldset className="filtros" data-recolhivel data-aberto={filtrosAbertos}>
           <legend>Filtrar</legend>
 
-          <div className="filtros__campos">
+          <div className="filtros__resumo">
+            <span>{resumirFiltros(filtros, categorias)}</span>
+            <button
+              type="button"
+              data-variante="secundario"
+              aria-expanded={filtrosAbertos}
+              aria-controls="filtros-lancamentos"
+              onClick={() => setFiltrosAbertos((aberto) => !aberto)}
+            >
+              {filtrosAbertos ? 'Ocultar' : 'Alterar'}
+            </button>
+          </div>
+
+          <div className="filtros__campos" id="filtros-lancamentos">
             {/* Os dois campos comecam vazios, porque a listagem abre sem recorte de
                 periodo, entao o painel oferece Limpar para desfazer a escolha. */}
             <SeletorData
