@@ -153,7 +153,7 @@ export function PublicTransparencyPage() {
             descricao="Nenhuma entrada ou saída foi registrada na competência selecionada. Escolha outro mês para ver o histórico."
           />
         ) : (
-          <TabelaRolavel titulo="Movimentações por categoria">
+          <TabelaRolavel titulo="Movimentações por categoria" cartoes>
             <table>
               <thead>
                 <tr>
@@ -166,14 +166,20 @@ export function PublicTransparencyPage() {
               <tbody>
                 {dados.byCategory.map((linha) => (
                   <tr key={`${linha.type}-${linha.category}`}>
-                    <td data-coluna="texto">{linha.category}</td>
-                    <td data-coluna="texto">{rotuloTipo(linha.type)}</td>
-                    <td data-alinha="direita">
+                    <td data-coluna="texto" data-campo="nome">
+                      {linha.category}
+                    </td>
+                    <td data-coluna="texto" data-campo="tipo">
+                      {rotuloTipo(linha.type)}
+                    </td>
+                    <td data-alinha="direita" data-campo="valor">
                       <span className={`valor valor--${linha.type.toLowerCase()}`}>
                         {formatarMoeda(linha.total)}
                       </span>
                     </td>
-                    <td data-alinha="direita">{linha.count}</td>
+                    <td data-alinha="direita" data-campo="quantidade" data-rotulo="Lançamentos">
+                      {linha.count}
+                    </td>
                   </tr>
                 ))}
               </tbody>

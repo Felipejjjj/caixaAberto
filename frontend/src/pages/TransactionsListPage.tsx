@@ -310,7 +310,7 @@ export function TransactionsListPage() {
         ))}
 
       {mostrarTabela && (
-        <TabelaRolavel titulo="Lançamentos">
+        <TabelaRolavel titulo="Lançamentos" cartoes>
           <table>
             <thead>
               <tr>
@@ -337,15 +337,17 @@ export function TransactionsListPage() {
                     key={lancamento.id}
                     className={lancamento.status === 'ESTORNADO' ? 'linha--estornada' : undefined}
                   >
-                    <td>{formatarData(lancamento.data)}</td>
-                    <td data-coluna="texto">
+                    <td data-campo="data">{formatarData(lancamento.data)}</td>
+                    <td data-coluna="texto" data-campo="descricao">
                       {lancamento.descricao}{' '}
                       {lancamento.status === 'ESTORNADO' && (
                         <span className="etiqueta etiqueta--estornado">Estornado</span>
                       )}
                     </td>
-                    <td data-coluna="texto">{lancamento.categoria.nome}</td>
-                    <td data-alinha="direita">
+                    <td data-coluna="texto" data-campo="categoria">
+                      {lancamento.categoria.nome}
+                    </td>
+                    <td data-alinha="direita" data-campo="valor">
                       <span
                         className={`valor valor--${lancamento.tipo.toLowerCase()}`}
                         aria-label={`${rotuloTipo(lancamento.tipo)} de ${formatarMoeda(lancamento.valor)}`}
@@ -353,7 +355,7 @@ export function TransactionsListPage() {
                         {valorComSinal(lancamento.tipo, lancamento.valor)}
                       </span>
                     </td>
-                    <td data-alinha="centro">
+                    <td data-alinha="centro" data-campo="comprovante">
                       {lancamento.possuiComprovante ? (
                         <>
                           <IconeComprovante />
@@ -363,7 +365,7 @@ export function TransactionsListPage() {
                         <span className="apenas-leitor">Sem comprovante</span>
                       )}
                     </td>
-                    <td data-coluna="acao">
+                    <td data-coluna="acao" data-campo="acao">
                       <Link
                         to={`/lancamentos/${lancamento.id}`}
                         aria-label={`Ver detalhes de ${lancamento.descricao}`}
