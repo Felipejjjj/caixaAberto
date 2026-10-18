@@ -204,7 +204,7 @@ export function MembersPage() {
           descricao="Ainda não há membros ativos nesta organização."
         />
       ) : (
-        <TabelaRolavel titulo="Membros da organização">
+        <TabelaRolavel titulo="Membros da organização" cartoes>
           <table>
             <thead>
               <tr>
@@ -220,9 +220,13 @@ export function MembersPage() {
               <tbody>
                 {membros.map((membro) => (
                   <tr key={membro.id}>
-                    <td data-coluna="texto">{membro.usuario.nome}</td>
-                    <td data-coluna="texto">{membro.usuario.email}</td>
-                    <td data-coluna="texto">
+                    <td data-coluna="texto" data-campo="nome">
+                      {membro.usuario.nome}
+                    </td>
+                    <td data-coluna="texto" data-campo="email">
+                      {membro.usuario.email}
+                    </td>
+                    <td data-coluna="texto" data-campo="papel">
                       {escrita ? (
                         <select
                           value={membro.papel}
@@ -242,7 +246,9 @@ export function MembersPage() {
                         <span className="etiqueta">{rotuloPapel(membro.papel)}</span>
                       )}
                     </td>
-                    <td data-coluna="texto">{formatarData(membro.dataVinculo)}</td>
+                    <td data-coluna="texto" data-campo="vinculo" data-rotulo="Vínculo desde">
+                      {formatarData(membro.dataVinculo)}
+                    </td>
                   </tr>
                 ))}
               </tbody>

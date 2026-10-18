@@ -249,7 +249,7 @@ export function CategoriesPage() {
           descricao="Ainda não há categorias ativas nesta organização."
         />
       ) : (
-        <TabelaRolavel titulo="Categorias">
+        <TabelaRolavel titulo="Categorias" cartoes>
           <table>
             <thead>
               <tr>
@@ -266,7 +266,7 @@ export function CategoriesPage() {
                   <tr key={categoria.id}>
                     {editandoId === categoria.id ? (
                       <>
-                        <td data-coluna="texto">
+                        <td data-coluna="texto" data-campo="nome">
                           <input
                             type="text"
                             value={nomeEdicao}
@@ -274,7 +274,7 @@ export function CategoriesPage() {
                             aria-label={`Nome de ${categoria.nome}`}
                           />
                         </td>
-                        <td data-coluna="texto">
+                        <td data-coluna="texto" data-campo="tipo">
                           <select
                             value={tipoEdicao}
                             onChange={(event) => setTipoEdicao(event.target.value as CategoryType)}
@@ -287,27 +287,38 @@ export function CategoriesPage() {
                             ))}
                           </select>
                         </td>
-                        <td data-coluna="texto">
-                          <button
-                            type="button"
-                            disabled={salvandoEdicao}
-                            onClick={() => salvarEdicao(categoria.id)}
-                          >
-                            {salvandoEdicao ? 'Salvando...' : 'Salvar'}
-                          </button>
-                          <button type="button" disabled={salvandoEdicao} onClick={cancelarEdicao}>
-                            Cancelar
-                          </button>
+                        <td data-coluna="texto" data-campo="acoes">
+                          <div className="acoes">
+                            <button
+                              type="button"
+                              disabled={salvandoEdicao}
+                              onClick={() => salvarEdicao(categoria.id)}
+                            >
+                              {salvandoEdicao ? 'Salvando...' : 'Salvar'}
+                            </button>
+                            <button
+                              type="button"
+                              data-variante="secundario"
+                              disabled={salvandoEdicao}
+                              onClick={cancelarEdicao}
+                            >
+                              Cancelar
+                            </button>
+                          </div>
                         </td>
                       </>
                     ) : (
                       <>
-                        <td data-coluna="texto">{categoria.nome}</td>
-                        <td data-coluna="texto">{rotuloTipo(categoria.tipo)}</td>
+                        <td data-coluna="texto" data-campo="nome">
+                          {categoria.nome}
+                        </td>
+                        <td data-coluna="texto" data-campo="tipo">
+                          {rotuloTipo(categoria.tipo)}
+                        </td>
                         {escrita && (
-                          <td data-coluna="texto">
+                          <td data-coluna="texto" data-campo="acoes">
                             {confirmandoExclusaoId === categoria.id ? (
-                              <>
+                              <div className="acoes">
                                 <span>Confirmar exclusão?</span>
                                 <button
                                   type="button"
@@ -318,24 +329,30 @@ export function CategoriesPage() {
                                 </button>
                                 <button
                                   type="button"
+                                  data-variante="secundario"
                                   disabled={excluindo}
                                   onClick={() => setConfirmandoExclusaoId(null)}
                                 >
                                   Cancelar
                                 </button>
-                              </>
+                              </div>
                             ) : (
-                              <>
-                                <button type="button" onClick={() => iniciarEdicao(categoria)}>
+                              <div className="acoes">
+                                <button
+                                  type="button"
+                                  data-variante="secundario"
+                                  onClick={() => iniciarEdicao(categoria)}
+                                >
                                   Editar
                                 </button>
                                 <button
                                   type="button"
+                                  data-variante="secundario"
                                   onClick={() => setConfirmandoExclusaoId(categoria.id)}
                                 >
                                   Excluir
                                 </button>
-                              </>
+                              </div>
                             )}
                           </td>
                         )}

@@ -148,7 +148,7 @@ export function StatementPage() {
       )}
 
       {(carregando || (extrato && extrato.linhas.length > 0)) && (
-        <TabelaRolavel titulo="Extrato de movimentações">
+        <TabelaRolavel titulo="Extrato de movimentações" cartoes>
           <table>
             <thead>
               <tr>
@@ -169,15 +169,17 @@ export function StatementPage() {
                     key={linha.id}
                     className={linha.status === 'ESTORNADO' ? 'linha--estornada' : undefined}
                   >
-                    <td>{formatarData(linha.data)}</td>
-                    <td data-coluna="texto">
+                    <td data-campo="data">{formatarData(linha.data)}</td>
+                    <td data-coluna="texto" data-campo="descricao">
                       {linha.descricao}{' '}
                       {linha.status === 'ESTORNADO' && (
                         <span className="etiqueta etiqueta--estornado">Estornado</span>
                       )}
                     </td>
-                    <td data-coluna="texto">{linha.categoria.nome}</td>
-                    <td data-alinha="direita">
+                    <td data-coluna="texto" data-campo="categoria">
+                      {linha.categoria.nome}
+                    </td>
+                    <td data-alinha="direita" data-campo="valor">
                       <span
                         className={`valor valor--${linha.tipo.toLowerCase()}`}
                         aria-label={`${rotuloTipo(linha.tipo)} de ${formatarMoeda(linha.valor)}`}
@@ -185,7 +187,7 @@ export function StatementPage() {
                         {valorComSinal(linha.tipo, linha.valor)}
                       </span>
                     </td>
-                    <td data-alinha="direita">
+                    <td data-alinha="direita" data-campo="saldo" data-rotulo="Saldo">
                       {linha.status === 'ESTORNADO' ? '-' : formatarMoeda(linha.saldoAcumulado)}
                     </td>
                   </tr>
