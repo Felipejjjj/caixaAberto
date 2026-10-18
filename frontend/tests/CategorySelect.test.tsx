@@ -65,4 +65,39 @@ describe('CategorySelect', () => {
 
     expect(screen.getByLabelText(/Categoria/)).toBeDisabled();
   });
+
+  // Na correcao de lancamento a categoria gravada pode ter sido excluida, e so ativas vem da API.
+  it('mantém como opção a categoria atual excluída, marcada como tal', async () => {
+    stubApi({
+      '/categorias': { body: { dados: [{ id: '1', nome: 'Mensalidade', tipo: 'ENTRADA' }] } },
+    });
+    render(
+      <CategorySelect
+        tipo="ENTRADA"
+        value="9"
+        categoriaAtual={{ id: '9', nome: 'Rifa' }}
+        onChange={() => {}}
+      />,
+    );
+
+    expect(await screen.findByRole('option', { name: 'Rifa (excluída)' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Categoria')).toHaveValue('9');
+  });
+
+  it('não repete a categoria atual quando ela ainda está ativa', async () => {
+    stubApi({
+      '/categorias': { body: { dados: [{ id: '1', nome: 'Mensalidade', tipo: 'ENTRADA' }] } },
+    });
+    render(
+      <CategorySelect
+        tipo="ENTRADA"
+        value="1"
+        categoriaAtual={{ id: '1', nome: 'Mensalidade' }}
+        onChange={() => {}}
+      />,
+    );
+
+    await screen.findByRole('option', { name: 'Mensalidade (Entrada)' });
+    expect(screen.queryByRole('option', { name: /excluída/ })).not.toBeInTheDocument();
+  });
 });

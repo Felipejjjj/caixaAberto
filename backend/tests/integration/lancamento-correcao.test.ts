@@ -89,6 +89,45 @@ describe('correção de lançamento (US20)', () => {
     expect(response.body.erro).toContain('Registre um novo lançamento');
   });
 
+  // Excluir categoria (US16) so desativa. O lancamento continua nela e precisa poder ser corrigido.
+  it('corrige lançamento cuja categoria foi excluída, mantendo a categoria', async () => {
+    const ctx = await setup();
+    await prisma.category.update({
+      where: { id: ctx.categoriaEntrada.id },
+      data: { active: false },
+    });
+
+    const response = await request(createApp())
+      .put(`/transactions/${ctx.transaction.id}`)
+      .set('Authorization', ctx.authorization)
+      .send({
+        description: 'Doação corrigida',
+        categoryId: ctx.categoriaEntrada.id.toString(),
+      });
+
+    expect(response.status).toBe(200);
+    const saved = await prisma.transaction.findUniqueOrThrow({ where: { id: ctx.transaction.id } });
+    expect(saved.description).toBe('Doação corrigida');
+    expect(saved.categoryId).toBe(ctx.categoriaEntrada.id);
+  });
+
+  it('recusa trocar para uma categoria excluída', async () => {
+    const ctx = await setup();
+    await prisma.category.update({
+      where: { id: ctx.outraCategoriaEntrada.id },
+      data: { active: false },
+    });
+
+    const response = await request(createApp())
+      .put(`/transactions/${ctx.transaction.id}`)
+      .set('Authorization', ctx.authorization)
+      .send({ categoryId: ctx.outraCategoriaEntrada.id.toString() });
+
+    expect(response.status).toBe(400);
+    const saved = await prisma.transaction.findUniqueOrThrow({ where: { id: ctx.transaction.id } });
+    expect(saved.categoryId).toBe(ctx.categoriaEntrada.id);
+  });
+
   it('rejeita alteração do tipo', async () => {
     const ctx = await setup();
     const response = await request(createApp())
