@@ -406,13 +406,16 @@ Erros:
 ### `GET /categorias`
 
 Exige autenticação. Query opcional: `tipo=ENTRADA|SAIDA`. Retorna somente categorias ativas da
-organização do contexto, ordenadas por nome.
+organização do contexto, ordenadas por nome, com a descrição, que a tela de categorias usa para
+editar.
 
 Sucesso `200`:
 
 ```json
 {
-  "dados": [{ "id": "10", "nome": "Alimentação", "tipo": "SAIDA" }]
+  "dados": [
+    { "id": "10", "nome": "Alimentação", "descricao": "Lanches e refeições", "tipo": "SAIDA" }
+  ]
 }
 ```
 

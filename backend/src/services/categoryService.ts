@@ -15,12 +15,13 @@ export interface CategoryResponse {
   tipo: string;
 }
 
-export interface CategoryListResponse {
-  dados: CategoryResponse[];
-}
-
 export interface CategoryDetailResponse extends CategoryResponse {
   descricao: string;
+}
+
+// A descricao vem na listagem porque a tela de categorias edita a partir dela (CA-F11-06).
+export interface CategoryListResponse {
+  dados: CategoryDetailResponse[];
 }
 
 export interface CategoryInput {
@@ -37,13 +38,7 @@ export async function listActiveCategories(
 ): Promise<CategoryListResponse> {
   const categories = await categoryRepository.findActiveCategories(organizationId, type);
 
-  return {
-    dados: categories.map((category) => ({
-      id: category.id.toString(),
-      nome: category.name,
-      tipo: category.type,
-    })),
-  };
+  return { dados: categories.map(toDetailResponse) };
 }
 
 function toDetailResponse(category: CategoryDetailRecord): CategoryDetailResponse {

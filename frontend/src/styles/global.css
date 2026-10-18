@@ -882,6 +882,21 @@ td[data-coluna='acao'] {
   white-space: nowrap;
 }
 
+/* Na lista de categorias a descricao vai embaixo do nome, sem coluna propria. */
+.categoria__descricao {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--color-ink-soft);
+}
+
+.categoria__edicao {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
 /* ---------- Tabelas em cartoes ---------- */
 
 /* Ate 640px uma tabela de cinco ou seis colunas so mostrava data, descricao e categoria, e o
