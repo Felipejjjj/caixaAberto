@@ -9,9 +9,9 @@ import { useTituloPagina } from '../lib/useTituloPagina';
 
 interface LoginResponse {
   token: string;
-  user: {
+  usuario: {
     id: string;
-    name: string;
+    nome: string;
     email: string;
   };
 }
@@ -50,10 +50,7 @@ export function LoginPage() {
       const resposta = await apiRequest<LoginResponse>('/auth/login', {
         method: 'POST',
         auth: false,
-        body: {
-          email,
-          password: senha,
-        },
+        body: { email, senha },
       });
 
       clearSession();

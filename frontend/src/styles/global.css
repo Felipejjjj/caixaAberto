@@ -899,9 +899,9 @@ td[data-coluna='acao'] {
 
 /* ---------- Tabelas em cartoes ---------- */
 
-/* Ate 640px uma tabela de cinco ou seis colunas so mostrava data, descricao e categoria, e o
-   valor ficava escondido na rolagem lateral. Cada linha vira um cartao em grade, arranjado pelo
-   data-campo das celulas; o HTML continua sendo tabela, e o cabecalho sai so da vista. */
+/* Ate 640px cada linha vira um cartao em grade, arranjado pelo data-campo das celulas, para o valor
+   nao ficar escondido na rolagem lateral. O HTML continua sendo tabela; o cabecalho sai so da
+   vista. */
 @media (max-width: 640px) {
   .tabela-rolavel[data-cartoes] {
     overflow: visible;
@@ -1648,8 +1648,8 @@ dd {
 
 /* ---------- Responsivo ---------- */
 
-/* Ate 760px as oito abas nao cabem numa linha. Em vez de rolar de lado, escondendo metade das
-   telas, a navegacao vira uma lista recolhivel aberta pelo botao Menu. */
+/* Ate 760px as oito abas nao cabem numa linha, e a navegacao vira uma lista aberta pelo botao
+   Menu. */
 @media (max-width: 760px) {
   .marca__interno {
     grid-template-columns: 1fr auto;

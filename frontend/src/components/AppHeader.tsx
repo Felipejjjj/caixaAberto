@@ -6,8 +6,7 @@ import type { OrganizacaoDoUsuario } from '../lib/organizacoes';
 import { podeEscrever } from '../lib/session';
 import { OrganizationSelector } from './OrganizationSelector';
 
-// Os grupos so aparecem com titulo no celular, onde o menu vira uma lista recolhivel. No desktop
-// a navegacao continua numa linha so, com um respiro maior entre os grupos.
+// O titulo do grupo so aparece no menu recolhivel do celular.
 const GRUPOS = [
   {
     titulo: 'Movimento',

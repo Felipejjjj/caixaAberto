@@ -68,8 +68,7 @@ async function getUserById(req: Request, res: Response) {
   }
 }
 
-// A conta nasce ativa (CA-F03-03) e vinculada a organizacao de quem cadastra; o corpo nao escolhe
-// a situacao, e um `active` enviado e ignorado.
+// Um `active` no corpo e ignorado: a conta sempre nasce ativa (CA-F03-03).
 async function createUser(req: Request, res: Response, next: NextFunction) {
   try {
     const input = newAccountSchema.parse(req.body);

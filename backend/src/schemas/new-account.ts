@@ -19,7 +19,6 @@ export const newAccountSchema = z.object({
     .string({ error: 'Informe a senha' })
     .min(8, 'A senha deve ter no mínimo 8 caracteres')
     .max(72, 'A senha deve ter no máximo 72 caracteres'),
-  // Como no vinculo por e-mail, a conta nova entra como consultor se nada for dito.
   papel: z.enum(roles).default('CONSULTOR'),
 });
 

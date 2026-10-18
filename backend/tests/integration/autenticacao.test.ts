@@ -53,6 +53,34 @@ describe('autenticação da sessão', () => {
     expect(response.body.erro).toBe('E-mail ou senha inválidos');
   });
 
+  it('aceita senha e devolve o usuário com propriedades em português', async () => {
+    const usuario = await criarUsuarioComSenha(SENHA_VALIDA);
+
+    const response = await request(createApp())
+      .post('/auth/login')
+      .send({ email: usuario.email, senha: SENHA_VALIDA });
+
+    expect(response.status).toBe(200);
+    expect(response.body.usuario).toEqual({
+      id: usuario.id.toString(),
+      nome: usuario.name,
+      email: usuario.email,
+      ativo: true,
+    });
+  });
+
+  // CA-F01-03: a conta inativa so e revelada a quem acerta a senha.
+  it('responde 401 genérico para conta inativa com senha errada', async () => {
+    const usuario = await criarUsuarioComSenha(SENHA_VALIDA, { active: false });
+
+    const response = await request(createApp())
+      .post('/auth/login')
+      .send({ email: usuario.email, senha: 'senhaErrada@123' });
+
+    expect(response.status).toBe(401);
+    expect(response.body.erro).toBe('E-mail ou senha inválidos');
+  });
+
   it('Cenário 4 - login de usuário inativo retorna 403', async () => {
     const usuario = await criarUsuarioComSenha(SENHA_VALIDA, { active: false });
 

@@ -78,7 +78,6 @@ export function UserRegistrationPage() {
     setSalvando(true);
 
     try {
-      // A API cria a conta ativa e ja vinculada a esta organizacao, com o papel escolhido.
       await apiRequest('/users', {
         method: 'POST',
         body: {
