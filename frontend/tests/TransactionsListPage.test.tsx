@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 import { TransactionsListPage } from '../src/pages/TransactionsListPage';
 import { hojeISO, mesAtual, primeiroDiaDoMesAtual } from '../src/lib/data';
-import { formatarCompetencia } from '../src/lib/formato';
+import { formatarCompetencia, formatarData } from '../src/lib/formato';
 import { autenticar, stubApi } from './helpers/api';
 import { escolherDia } from './helpers/campos';
 
@@ -175,6 +175,34 @@ describe('TransactionsListPage', () => {
 
     expect(await screen.findByText('Nenhum lançamento no período')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Limpar filtros' })).toBeInTheDocument();
+  });
+
+  // No celular os campos ficam recolhidos; o resumo e o que diz qual recorte esta valendo.
+  it('resume os filtros em uso e abre os campos pelo botão Alterar', async () => {
+    autenticar();
+    stubApi(LISTAGEM);
+    const usuario = userEvent.setup();
+
+    renderizar();
+
+    const periodo = `${formatarData(primeiroDiaDoMesAtual())} a ${formatarData(hojeISO())}`;
+    expect(await screen.findByText(periodo)).toBeInTheDocument();
+    await screen.findByRole('option', { name: 'Mensalidade' });
+
+    await usuario.selectOptions(screen.getByLabelText('Tipo'), 'ENTRADA');
+    await usuario.selectOptions(screen.getByLabelText('Categoria'), '1');
+
+    expect(screen.getByText(`${periodo} · entradas · Mensalidade`)).toBeInTheDocument();
+
+    const alterar = screen.getByRole('button', { name: 'Alterar' });
+    expect(alterar).toHaveAttribute('aria-expanded', 'false');
+
+    await usuario.click(alterar);
+
+    expect(screen.getByRole('button', { name: 'Ocultar' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
   });
 
   it('mostra o erro da API quando a listagem não carrega', async () => {

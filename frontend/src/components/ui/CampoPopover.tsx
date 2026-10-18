@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 
 import { ContextoPopover } from './contextoPopover';
@@ -47,6 +47,18 @@ export function CampoPopover({
       procurar('[data-foco="true"]') ?? procurar('[aria-pressed="true"]') ?? procurar('button');
 
     alvo?.focus();
+  }, [aberto]);
+
+  // O painel ancora pela esquerda do campo. Num campo da coluna direita, como o "Ate" ao lado do
+  // "De" no celular, ele passaria da borda da tela; nesse caso ancora pela direita. A medida vem
+  // antes da pintura para o painel nao aparecer no lugar errado por um quadro.
+  useLayoutEffect(() => {
+    const elemento = painel.current;
+    if (!aberto || !elemento) return;
+
+    const passaDaBorda =
+      elemento.getBoundingClientRect().right > document.documentElement.clientWidth;
+    if (passaDaBorda) elemento.dataset.alinhamento = 'direita';
   }, [aberto]);
 
   useEffect(() => {
