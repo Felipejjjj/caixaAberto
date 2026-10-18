@@ -206,7 +206,7 @@ a:hover {
 .navegacao {
   grid-area: nav;
   display: flex;
-  gap: var(--space-4);
+  gap: var(--space-5);
   align-items: stretch;
   margin-top: var(--space-3);
   overflow-x: auto;
@@ -214,6 +214,19 @@ a:hover {
 }
 
 .navegacao::-webkit-scrollbar {
+  display: none;
+}
+
+.navegacao__grupo {
+  display: flex;
+  gap: var(--space-4);
+  align-items: stretch;
+}
+
+/* No desktop o respiro entre os grupos ja separa Movimento de Organizacao; o titulo e o botao de
+   menu so entram no celular. */
+.navegacao__titulo,
+.marca__menu {
   display: none;
 }
 
@@ -1397,13 +1410,25 @@ dd {
 
 /* ---------- Responsivo ---------- */
 
-@media (max-width: 720px) {
+/* Ate 760px as oito abas nao cabem numa linha. Em vez de rolar de lado, escondendo metade das
+   telas, a navegacao vira uma lista recolhivel aberta pelo botao Menu. */
+@media (max-width: 760px) {
   .marca__interno {
     grid-template-columns: 1fr auto;
     grid-template-areas:
       'nome fim'
       'contexto contexto'
       'nav nav';
+    padding-bottom: var(--space-3);
+  }
+
+  .marca__fim {
+    gap: var(--space-1);
+  }
+
+  .marca__menu {
+    display: inline-flex;
+    align-items: center;
   }
 
   .seletor-organizacao {
@@ -1412,9 +1437,129 @@ dd {
   }
 
   .navegacao {
+    display: none;
+    flex-direction: column;
     gap: var(--space-3);
+    margin-top: var(--space-3);
+    overflow: visible;
   }
 
+  .navegacao[data-aberto='true'] {
+    display: flex;
+  }
+
+  .navegacao__grupo {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .navegacao__titulo {
+    display: block;
+    padding-bottom: var(--space-1);
+    border-bottom: 1px solid var(--color-rule);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-ink-soft);
+  }
+
+  .navegacao a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    margin: 0;
+    padding: 0 var(--space-3);
+    font-size: 1rem;
+    border-bottom: 1px solid var(--color-rule-soft);
+    border-left: 2px solid transparent;
+  }
+
+  .navegacao a[aria-current='page'] {
+    border-bottom-color: var(--color-rule-soft);
+    border-left-color: var(--color-accent);
+    background: var(--color-surface-alt);
+  }
+
+  /* Os dois botoes principais da tela dividem a linha em vez de empilhar com larguras diferentes. */
+  .cabecalho-pagina > .acoes:has(> :nth-child(2)) {
+    width: 100%;
+  }
+
+  .cabecalho-pagina > .acoes:has(> :nth-child(2)) > * {
+    flex: 1 1 0;
+    padding-inline: var(--space-2);
+    text-align: center;
+    white-space: nowrap;
+  }
+}
+
+/* Celular e tablet, pela forma de apontar e nao pela largura: um iPad deitado tem tela de desktop e
+   ainda e operado com o dedo. */
+@media (pointer: coarse) {
+  /* Abaixo de 16px o Safari do iPhone e do iPad amplia a tela ao tocar no campo, e ela fica
+     deslocada depois. */
+  input,
+  select,
+  textarea,
+  .seletor-organizacao select {
+    font-size: 16px;
+  }
+
+  /* Alvo de toque de 44px, a medida minima das diretrizes de acessibilidade para toque. */
+  button,
+  select,
+  input:not([type='file']),
+  .acao,
+  .campo-popover__campo,
+  .seletor-organizacao select {
+    min-height: 44px;
+  }
+
+  .acao {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .seletor-data__semana,
+  .seletor-data__grade {
+    grid-template-columns: repeat(7, 40px);
+  }
+
+  .seletor-data__dia {
+    min-height: 40px;
+  }
+
+  .seletor-mes__mes {
+    min-height: 44px;
+  }
+
+  .campo-popover__navegar {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* As abas do desktop tem so a margem de baixo; com o dedo, ganham area tambem acima do texto. */
+@media (pointer: coarse) and (min-width: 761px) {
+  .navegacao a {
+    padding-top: var(--space-2);
+  }
+}
+
+/* Tablet em pe: as oito abas cabem numa linha com um espacamento menor. */
+@media (min-width: 761px) and (max-width: 1024px) {
+  .navegacao {
+    gap: var(--space-4);
+  }
+
+  .navegacao__grupo {
+    gap: var(--space-3);
+  }
+}
+
+@media (max-width: 720px) {
   .category-chart__item {
     grid-template-columns: 1fr;
     gap: var(--space-1);
@@ -1437,7 +1582,7 @@ dd {
 
 @media (max-width: 480px) {
   main {
-    padding: var(--space-4) var(--space-2);
+    padding: var(--space-4) var(--space-3);
   }
 
   .capa-publica h1 {
