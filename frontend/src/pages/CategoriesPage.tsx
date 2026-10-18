@@ -14,6 +14,7 @@ type CategoryType = 'ENTRADA' | 'SAIDA';
 interface Category {
   id: string;
   nome: string;
+  descricao: string;
   tipo: CategoryType;
 }
 
@@ -48,6 +49,7 @@ export function CategoriesPage() {
 
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [nomeEdicao, setNomeEdicao] = useState('');
+  const [descricaoEdicao, setDescricaoEdicao] = useState('');
   const [tipoEdicao, setTipoEdicao] = useState<CategoryType>('SAIDA');
   const [salvandoEdicao, setSalvandoEdicao] = useState(false);
   const [erroEdicao, setErroEdicao] = useState<string | null>(null);
@@ -98,9 +100,7 @@ export function CategoriesPage() {
       });
 
       setCategorias((atual) =>
-        [...atual, { id: nova.id, nome: nova.nome, tipo: nova.tipo }].sort((a, b) =>
-          a.nome.localeCompare(b.nome, 'pt-BR'),
-        ),
+        [...atual, nova].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')),
       );
       setMensagem(`Categoria "${nova.nome}" cadastrada.`);
       setNome('');
@@ -118,6 +118,7 @@ export function CategoriesPage() {
   function iniciarEdicao(categoria: Category) {
     setEditandoId(categoria.id);
     setNomeEdicao(categoria.nome);
+    setDescricaoEdicao(categoria.descricao);
     setTipoEdicao(categoria.tipo);
     setErroEdicao(null);
   }
@@ -135,16 +136,12 @@ export function CategoriesPage() {
     try {
       const atualizada = await apiRequest<CategoryWriteResponse>(`/categorias/${id}`, {
         method: 'PUT',
-        body: { nome: nomeEdicao, tipo: tipoEdicao },
+        body: { nome: nomeEdicao, descricao: descricaoEdicao, tipo: tipoEdicao },
       });
 
       setCategorias((atual) =>
         atual
-          .map((item) =>
-            item.id === id
-              ? { id: atualizada.id, nome: atualizada.nome, tipo: atualizada.tipo }
-              : item,
-          )
+          .map((item) => (item.id === id ? atualizada : item))
           .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')),
       );
       setMensagem(`Categoria "${atualizada.nome}" atualizada.`);
@@ -267,12 +264,21 @@ export function CategoriesPage() {
                     {editandoId === categoria.id ? (
                       <>
                         <td data-coluna="texto" data-campo="nome">
-                          <input
-                            type="text"
-                            value={nomeEdicao}
-                            onChange={(event) => setNomeEdicao(event.target.value)}
-                            aria-label={`Nome de ${categoria.nome}`}
-                          />
+                          <div className="categoria__edicao">
+                            <input
+                              type="text"
+                              value={nomeEdicao}
+                              onChange={(event) => setNomeEdicao(event.target.value)}
+                              aria-label={`Nome de ${categoria.nome}`}
+                            />
+                            <input
+                              type="text"
+                              value={descricaoEdicao}
+                              onChange={(event) => setDescricaoEdicao(event.target.value)}
+                              placeholder="Descrição"
+                              aria-label={`Descrição de ${categoria.nome}`}
+                            />
+                          </div>
                         </td>
                         <td data-coluna="texto" data-campo="tipo">
                           <select
@@ -310,7 +316,10 @@ export function CategoriesPage() {
                     ) : (
                       <>
                         <td data-coluna="texto" data-campo="nome">
-                          {categoria.nome}
+                          <span>{categoria.nome}</span>
+                          {categoria.descricao && (
+                            <small className="categoria__descricao">{categoria.descricao}</small>
+                          )}
                         </td>
                         <td data-coluna="texto" data-campo="tipo">
                           {rotuloTipo(categoria.tipo)}

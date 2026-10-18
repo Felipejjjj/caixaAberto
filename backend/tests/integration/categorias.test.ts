@@ -10,7 +10,38 @@ import {
 } from '../factories/index.js';
 import { createAuthorizationHeader } from '../helpers/auth.js';
 
+const DESCRICAO_DA_FACTORY = 'Categoria criada por uma factory de integração';
+
 describe('consulta de categorias', () => {
+  // CA-F11-06: a tela de categorias edita nome, descricao e tipo a partir da listagem.
+  it('devolve a descrição de cada categoria', async () => {
+    const user = await createUser();
+    const organization = await createOrganization();
+    await createMembership({ userId: user.id, organizationId: organization.id });
+    const transporte = await createCategory({
+      organizationId: organization.id,
+      name: 'Transporte',
+      description: 'Ônibus e combustível',
+      type: 'SAIDA',
+    });
+
+    const response = await request(createApp())
+      .get('/categorias')
+      .set('Authorization', createAuthorizationHeader(user));
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      dados: [
+        {
+          id: transporte.id.toString(),
+          nome: 'Transporte',
+          descricao: 'Ônibus e combustível',
+          tipo: 'SAIDA',
+        },
+      ],
+    });
+  });
+
   it('Cenário 1 - listar categorias por tipo', async () => {
     const user = await createUser();
     const organization = await createOrganization();
@@ -40,8 +71,18 @@ describe('consulta de categorias', () => {
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
       dados: [
-        { id: alimentacao.id.toString(), nome: 'Alimentação', tipo: 'SAIDA' },
-        { id: material.id.toString(), nome: 'Material', tipo: 'SAIDA' },
+        {
+          id: alimentacao.id.toString(),
+          nome: 'Alimentação',
+          tipo: 'SAIDA',
+          descricao: DESCRICAO_DA_FACTORY,
+        },
+        {
+          id: material.id.toString(),
+          nome: 'Material',
+          tipo: 'SAIDA',
+          descricao: DESCRICAO_DA_FACTORY,
+        },
       ],
     });
   });
@@ -74,7 +115,14 @@ describe('consulta de categorias', () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
-      dados: [{ id: mensalidades.id.toString(), nome: 'Mensalidades', tipo: 'ENTRADA' }],
+      dados: [
+        {
+          id: mensalidades.id.toString(),
+          nome: 'Mensalidades',
+          tipo: 'ENTRADA',
+          descricao: DESCRICAO_DA_FACTORY,
+        },
+      ],
     });
   });
 
@@ -102,7 +150,14 @@ describe('consulta de categorias', () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
-      dados: [{ id: ativa.id.toString(), nome: 'Categoria ativa', tipo: 'SAIDA' }],
+      dados: [
+        {
+          id: ativa.id.toString(),
+          nome: 'Categoria ativa',
+          tipo: 'SAIDA',
+          descricao: DESCRICAO_DA_FACTORY,
+        },
+      ],
     });
   });
 
@@ -129,8 +184,18 @@ describe('consulta de categorias', () => {
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
       dados: [
-        { id: aluguel.id.toString(), nome: 'Aluguel', tipo: 'SAIDA' },
-        { id: doacoes.id.toString(), nome: 'Doações', tipo: 'ENTRADA' },
+        {
+          id: aluguel.id.toString(),
+          nome: 'Aluguel',
+          tipo: 'SAIDA',
+          descricao: DESCRICAO_DA_FACTORY,
+        },
+        {
+          id: doacoes.id.toString(),
+          nome: 'Doações',
+          tipo: 'ENTRADA',
+          descricao: DESCRICAO_DA_FACTORY,
+        },
       ],
     });
   });

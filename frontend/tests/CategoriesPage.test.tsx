@@ -7,8 +7,8 @@ import { autenticar, stubApi } from './helpers/api';
 
 const CATEGORIAS = {
   dados: [
-    { id: '10', nome: 'Alimentação', tipo: 'SAIDA' },
-    { id: '11', nome: 'Mensalidades', tipo: 'ENTRADA' },
+    { id: '10', nome: 'Alimentação', descricao: 'Lanches e refeições', tipo: 'SAIDA' },
+    { id: '11', nome: 'Mensalidades', descricao: '', tipo: 'ENTRADA' },
   ],
 };
 
@@ -23,6 +23,7 @@ describe('CategoriesPage', () => {
     expect(screen.getByText('Mensalidades')).toBeInTheDocument();
     expect(screen.getAllByText('Saída').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Entrada').length).toBeGreaterThan(0);
+    expect(screen.getByText('Lanches e refeições')).toBeInTheDocument();
   });
 
   it('mostra estado vazio quando não há categorias', async () => {
@@ -130,6 +131,39 @@ describe('CategoriesPage', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('Categoria "Mercado" atualizada.');
     expect(screen.getByText('Mercado')).toBeInTheDocument();
     expect(api.chamadasPara('/categorias/10')[0]!.method).toBe('PUT');
+  });
+
+  // CA-F11-06: a descricao tambem pode ser alterada, e o campo abre com a descricao atual.
+  it('edita a descrição partindo da descrição atual', async () => {
+    autenticar();
+    stubApi({ '/categorias': { body: CATEGORIAS } });
+    const usuario = userEvent.setup();
+
+    render(<CategoriesPage />);
+
+    await screen.findByText('Alimentação');
+    await usuario.click(screen.getAllByRole('button', { name: 'Editar' })[0]!);
+
+    const campoDescricao = screen.getByLabelText('Descrição de Alimentação');
+    expect(campoDescricao).toHaveValue('Lanches e refeições');
+
+    await usuario.clear(campoDescricao);
+    await usuario.type(campoDescricao, 'Lanches das reuniões');
+
+    const api = stubApi({
+      '/categorias/10': {
+        body: { id: '10', nome: 'Alimentação', descricao: 'Lanches das reuniões', tipo: 'SAIDA' },
+      },
+    });
+
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }));
+
+    expect(await screen.findByText('Lanches das reuniões')).toBeInTheDocument();
+    expect(api.chamadasPara('/categorias/10')[0]!.body).toEqual({
+      nome: 'Alimentação',
+      descricao: 'Lanches das reuniões',
+      tipo: 'SAIDA',
+    });
   });
 
   it('cancela a edição sem chamar a API', async () => {

@@ -55,7 +55,12 @@ describe('cadastro de categoria (US14)', () => {
       .query({ tipo: 'SAIDA' })
       .set('Authorization', authorization);
     expect(saidas.body.dados).toEqual([
-      { id: response.body.id, nome: 'Transporte', tipo: 'SAIDA' },
+      {
+        id: response.body.id,
+        nome: 'Transporte',
+        descricao: 'Ônibus e combustível das viagens',
+        tipo: 'SAIDA',
+      },
     ]);
   });
 

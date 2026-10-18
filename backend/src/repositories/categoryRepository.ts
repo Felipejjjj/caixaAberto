@@ -28,18 +28,14 @@ const categoryDetailSelection = {
 export async function findActiveCategories(
   organizationId: bigint,
   type?: CategoryType,
-): Promise<CategoryRecord[]> {
+): Promise<CategoryDetailRecord[]> {
   return prisma.category.findMany({
     where: {
       organizationId,
       active: true,
       ...(type ? { type } : {}),
     },
-    select: {
-      id: true,
-      name: true,
-      type: true,
-    },
+    select: categoryDetailSelection,
     orderBy: { name: 'asc' },
   });
 }
