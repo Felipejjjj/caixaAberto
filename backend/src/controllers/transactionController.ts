@@ -311,9 +311,8 @@ export async function updateOne(req: Request, res: Response) {
     }
 
     /*
-     * Revalida a categoria usando o tipo final, mas so quando ela muda. Excluir uma categoria apenas
-     * a desativa e preserva o historico; se a categoria atual tambem fosse revalidada, nenhum
-     * lancamento dela poderia mais ter a descricao ou o valor corrigidos.
+     * Revalida a categoria so quando ela muda. Excluir categoria apenas a desativa, e o lancamento
+     * que ja esta nela precisa continuar corrigivel.
      */
     if (categoryId !== currentTransaction.categoryId) {
       const category = await transactionRepository.getCategoryForOrganization(

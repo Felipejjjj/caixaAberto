@@ -23,9 +23,8 @@ interface CategorySelectProps {
   required?: boolean;
   label?: string;
   name?: string;
-  // Na correcao de lancamento, a categoria ja gravada pode ter sido excluida e nao vem na lista
-  // de ativas; ela continua como opcao para o lancamento poder ser corrigido sem trocar de
-  // categoria.
+  // Categoria ja gravada no lancamento. Se foi excluida, nao vem na lista de ativas e entra como
+  // opcao a parte.
   categoriaAtual?: { id: string; nome: string };
 }
 

@@ -38,8 +38,7 @@ async function register(req: Request, res: Response, next: NextFunction) {
 
 async function login(req: Request, res: Response) {
   try {
-    // O contrato usa `senha`, como as demais rotas em portugues; `password` continua aceito
-    // enquanto houver cliente antigo.
+    // `password` e o nome antigo de `senha`, aceito enquanto houver cliente que o envie.
     const { email, senha, password } = req.body ?? {};
     const senhaInformada: unknown = senha ?? password;
 
@@ -56,8 +55,7 @@ async function login(req: Request, res: Response) {
 
     const user = await userRepository.findByEmail(email);
 
-    // A senha e conferida antes da situacao da conta. Na ordem inversa, qualquer senha digitada
-    // com o e-mail de uma conta inativa recebia "Usuario inativo", revelando que o e-mail existe
+    // A senha vem antes da situacao da conta para a resposta nao revelar que o e-mail existe
     // (CA-F01-03).
     if (!user || !(await bcrypt.compare(senhaInformada, user.passwordHash))) {
       return res.status(401).json({
@@ -73,7 +71,7 @@ async function login(req: Request, res: Response) {
 
     const token = signUserToken(user);
 
-    // `user`, em ingles, segue na resposta pelo mesmo motivo do `password` acima.
+    // `user` e o formato antigo de `usuario`, mantido pelo mesmo motivo.
     return res.json({
       token,
       usuario: {

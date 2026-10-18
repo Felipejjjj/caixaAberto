@@ -49,9 +49,8 @@ export function CampoPopover({
     alvo?.focus();
   }, [aberto]);
 
-  // O painel ancora pela esquerda do campo. Num campo da coluna direita, como o "Ate" ao lado do
-  // "De" no celular, ele passaria da borda da tela; nesse caso ancora pela direita. A medida vem
-  // antes da pintura para o painel nao aparecer no lugar errado por um quadro.
+  // Ancora pela direita quando o painel passaria da borda da tela, como no "Ate" ao lado do "De"
+  // no celular. A medida vem antes da pintura para o painel nao piscar no lugar errado.
   useLayoutEffect(() => {
     const elemento = painel.current;
     if (!aberto || !elemento) return;
