@@ -173,6 +173,10 @@ publicado, usando a connection string externa que o Render mostra na página do 
 DATABASE_URL="<connection string externa do Render>" npm run seed
 ```
 
+O blueprint cria o banco com `ipAllowList` vazio, acessível só pela rede interna do Render. Antes do
+seed, libere o seu IP em **Networking > PostgreSQL Inbound IP Rules**, na página do Postgres, e
+remova a regra depois.
+
 ### O que muda em produção
 
 Os comprovantes são guardados no próprio Postgres, e não em disco. O plano gratuito não tem volume
@@ -202,8 +206,11 @@ garante a API acordada na hora.
 
 Dois avisos sobre o agendamento: o GitHub desativa workflows agendados em repositórios públicos
 depois de 60 dias sem commits, e é preciso reativá-los pela aba Actions; e o Postgres gratuito do
-Render expira depois de 30 dias e é removido, então manter a aplicação no ar além disso exige um
-banco pago ou recriar o serviço.
+Render expira depois de 30 dias e é suspenso, então manter a aplicação no ar além disso exige um
+banco pago ou criar outro. Para trocar de banco: crie o novo, ponha a URL interna dele na
+`DATABASE_URL` da API, rode o seed e atualize o nome, o banco e o usuário em
+[`render.yaml`](render.yaml). Sem esse último passo, uma sincronização do blueprint volta a API para o
+banco antigo. Os dados do banco vencido não são copiados.
 
 ## Fluxo de contribuição
 
