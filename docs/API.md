@@ -97,19 +97,23 @@ Sucesso `200`:
     "nome": "Ana",
     "email": "tesoureiro@exemplo.com",
     "ativo": true
-  },
-  "organizacoes": [{ "id": "2", "nome": "Comissão", "papel": "TESOUREIRO" }]
+  }
 }
 ```
 
+As organizações e o papel em cada uma não vêm no login: o front consulta
+[`GET /users/me/organizacoes`](#get-usersmeorganizacoes) logo depois, e é dali que sai a organização
+escolhida e enviada em `X-Organization-Id`.
+
 Erros:
 
-- `400`: campos obrigatórios ausentes ou inválidos;
-- `401`: credenciais inválidas;
-- `403`: usuário inativo.
+- `400`: e-mail ou senha ausentes;
+- `401`: credenciais inválidas. A mesma mensagem vale para e-mail inexistente e senha errada;
+- `403`: usuário inativo. Só aparece com a senha correta, para não revelar que o e-mail existe.
 
-Compatibilidade atual: o endpoint ainda espera `password` e devolve `user` com propriedades em
-inglês.
+Compatibilidade atual: `password` ainda é aceito no lugar de `senha`, e a resposta ainda traz
+`user`, com propriedades em inglês, ao lado de `usuario`. Os dois saem quando nenhum cliente
+depender deles.
 
 ### `POST /auth/logout`
 

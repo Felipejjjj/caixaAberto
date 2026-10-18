@@ -55,7 +55,11 @@ async function entrar(usuario: ReturnType<typeof userEvent.setup>) {
 
 describe('LoginPage', () => {
   it('guarda o token e leva para a área autenticada (CA-F01-02)', async () => {
-    stubApi({ '/auth/login': { body: { token: 'token-novo', user: { id: '1' } } } });
+    const api = stubApi({
+      '/auth/login': {
+        body: { token: 'token-novo', usuario: { id: '1', nome: 'Ana', email: 'ana@exemplo.com' } },
+      },
+    });
     const usuario = userEvent.setup();
     renderizarLogin();
 
@@ -63,6 +67,10 @@ describe('LoginPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'Lançamentos' })).toBeInTheDocument();
     expect(localStorage.getItem('caixaAberto.token')).toBe('token-novo');
+    expect(api.chamadasPara('/auth/login')[0]!.body).toEqual({
+      email: 'ana@exemplo.com',
+      senha: 'senha123456',
+    });
   });
 
   // CA-F01-03: a mensagem nao pode revelar se o e-mail existe. Dizer "senha incorreta" entregaria
@@ -84,7 +92,11 @@ describe('LoginPage', () => {
     localStorage.setItem('caixaAberto.token', 'token-antigo');
     localStorage.setItem('caixaAberto.organizationId', '99');
 
-    stubApi({ '/auth/login': { body: { token: 'token-novo', user: { id: '1' } } } });
+    stubApi({
+      '/auth/login': {
+        body: { token: 'token-novo', usuario: { id: '1', nome: 'Ana', email: 'ana@exemplo.com' } },
+      },
+    });
     const usuario = userEvent.setup();
     renderizarLogin();
 

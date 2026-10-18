@@ -38,9 +38,17 @@ async function register(req: Request, res: Response, next: NextFunction) {
 
 async function login(req: Request, res: Response) {
   try {
-    const { email, password } = req.body;
+    // O contrato usa `senha`, como as demais rotas em portugues; `password` continua aceito
+    // enquanto houver cliente antigo.
+    const { email, senha, password } = req.body ?? {};
+    const senhaInformada: unknown = senha ?? password;
 
-    if (!email || !password) {
+    if (
+      typeof email !== 'string' ||
+      typeof senhaInformada !== 'string' ||
+      !email ||
+      !senhaInformada
+    ) {
       return res.status(400).json({
         erro: 'Preencha e-mail e senha',
       });
@@ -48,7 +56,10 @@ async function login(req: Request, res: Response) {
 
     const user = await userRepository.findByEmail(email);
 
-    if (!user) {
+    // A senha e conferida antes da situacao da conta. Na ordem inversa, qualquer senha digitada
+    // com o e-mail de uma conta inativa recebia "Usuario inativo", revelando que o e-mail existe
+    // (CA-F01-03).
+    if (!user || !(await bcrypt.compare(senhaInformada, user.passwordHash))) {
       return res.status(401).json({
         erro: 'E-mail ou senha inválidos',
       });
@@ -60,18 +71,17 @@ async function login(req: Request, res: Response) {
       });
     }
 
-    const passwordIsValid = await bcrypt.compare(password, user.passwordHash);
-
-    if (!passwordIsValid) {
-      return res.status(401).json({
-        erro: 'E-mail ou senha inválidos',
-      });
-    }
-
     const token = signUserToken(user);
 
+    // `user`, em ingles, segue na resposta pelo mesmo motivo do `password` acima.
     return res.json({
       token,
+      usuario: {
+        id: user.id.toString(),
+        nome: user.name,
+        email: user.email,
+        ativo: user.active,
+      },
       user: serializeUser(user),
     });
   } catch (error) {
