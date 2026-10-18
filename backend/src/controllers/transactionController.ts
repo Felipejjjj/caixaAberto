@@ -311,19 +311,22 @@ export async function updateOne(req: Request, res: Response) {
     }
 
     /*
-     * Revalida a categoria usando o tipo final.
-     * Isso também cobre o caso em que categoryId e type são alterados juntos.
+     * Revalida a categoria usando o tipo final, mas so quando ela muda. Excluir uma categoria apenas
+     * a desativa e preserva o historico; se a categoria atual tambem fosse revalidada, nenhum
+     * lancamento dela poderia mais ter a descricao ou o valor corrigidos.
      */
-    const category = await transactionRepository.getCategoryForOrganization(
-      categoryId,
-      organizationId,
-      type,
-    );
+    if (categoryId !== currentTransaction.categoryId) {
+      const category = await transactionRepository.getCategoryForOrganization(
+        categoryId,
+        organizationId,
+        type,
+      );
 
-    if (!category) {
-      return res.status(400).json({
-        erro: 'Categoria não encontrada, inativa ou incompatível com o tipo do lançamento.',
-      });
+      if (!category) {
+        return res.status(400).json({
+          erro: 'Categoria não encontrada, inativa ou incompatível com o tipo do lançamento.',
+        });
+      }
     }
 
     const updatedTransaction = await transactionRepository.updateTransaction(id, organizationId, {

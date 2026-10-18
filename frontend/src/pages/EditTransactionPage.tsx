@@ -207,6 +207,7 @@ export function EditTransactionPage() {
       <form onSubmit={handleSubmit} noValidate className="formulario-coluna">
         <CategorySelect
           tipo={lancamento.type}
+          categoriaAtual={{ id: lancamento.category.id, nome: lancamento.category.name }}
           value={values.categoriaId}
           onChange={(valor) => alterar('categoriaId', valor)}
           required

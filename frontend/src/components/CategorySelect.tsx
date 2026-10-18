@@ -23,6 +23,10 @@ interface CategorySelectProps {
   required?: boolean;
   label?: string;
   name?: string;
+  // Na correcao de lancamento, a categoria ja gravada pode ter sido excluida e nao vem na lista
+  // de ativas; ela continua como opcao para o lancamento poder ser corrigido sem trocar de
+  // categoria.
+  categoriaAtual?: { id: string; nome: string };
 }
 
 const ROTULO_TIPO: Record<CategoryType, string> = {
@@ -39,6 +43,7 @@ export function CategorySelect({
   required = false,
   label = 'Categoria',
   name = 'categoriaId',
+  categoriaAtual,
 }: CategorySelectProps) {
   const selectId = useId();
   const [categorias, setCategorias] = useState<CategoryOption[]>([]);
@@ -81,6 +86,10 @@ export function CategorySelect({
   }, [tipo]);
 
   const selectDesabilitado = disabled || carregando;
+  const atualExcluida =
+    categoriaAtual && !carregando && !categorias.some((item) => item.id === categoriaAtual.id)
+      ? categoriaAtual
+      : null;
 
   return (
     <label htmlFor={selectId}>
@@ -103,6 +112,7 @@ export function CategorySelect({
                 ? 'Nenhuma categoria disponível'
                 : 'Selecione uma categoria'}
         </option>
+        {atualExcluida && <option value={atualExcluida.id}>{atualExcluida.nome} (excluída)</option>}
         {categorias.map((categoria) => (
           <option key={categoria.id} value={categoria.id}>
             {categoria.nome} ({ROTULO_TIPO[categoria.tipo]})
