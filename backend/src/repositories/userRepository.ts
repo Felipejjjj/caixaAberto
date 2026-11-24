@@ -161,6 +161,14 @@ async function deleteById(id: bigint) {
   });
 }
 
+async function deactivateInOrganization(id: bigint, organizationId: bigint) {
+  const result = await prisma.user.updateMany({
+    where: { id, active: true, memberships: { some: { organizationId, active: true } } },
+    data: { active: false },
+  });
+  return result.count === 1;
+}
+
 // Retorna somente organizacoes em que o usuario possui vinculo ativo.
 // A senha e outros dados privados do usuario nao sao selecionados.
 async function findOrganizationsByUser(userId: bigint) {
@@ -205,5 +213,6 @@ export default {
   createWithMembership,
   update,
   deleteById,
+  deactivateInOrganization,
   findOrganizationsByUser,
 };
