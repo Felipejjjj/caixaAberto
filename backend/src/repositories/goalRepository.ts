@@ -18,6 +18,42 @@ export async function findGoalsByOrganization(organizationId: bigint): Promise<G
   });
 }
 
+export async function createGoal(data: {
+  organizationId: bigint;
+  description: string;
+  targetAmount: Prisma.Decimal;
+  deadline: Date;
+  createdAt: Date;
+}): Promise<GoalRecord> {
+  return prisma.goal.create({
+    data,
+    select: { id: true, description: true, targetAmount: true, deadline: true, createdAt: true },
+  });
+}
+
+export async function findGoalByIdInOrganization(
+  id: bigint,
+  organizationId: bigint,
+): Promise<GoalRecord | null> {
+  return prisma.goal.findFirst({
+    where: { id, organizationId },
+    select: { id: true, description: true, targetAmount: true, deadline: true, createdAt: true },
+  });
+}
+
+export async function updateGoal(
+  id: bigint,
+  organizationId: bigint,
+  data: { description?: string; targetAmount?: Prisma.Decimal; deadline?: Date },
+): Promise<GoalRecord | null> {
+  const { count } = await prisma.goal.updateMany({ where: { id, organizationId }, data });
+  if (count === 0) return null;
+  return prisma.goal.findUniqueOrThrow({
+    where: { id },
+    select: { id: true, description: true, targetAmount: true, deadline: true, createdAt: true },
+  });
+}
+
 // Soma das entradas ativas da organização no intervalo. Estornos e saídas não contam.
 export async function sumValidIncome(
   organizationId: bigint,

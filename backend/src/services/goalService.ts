@@ -1,4 +1,5 @@
 import { formatCivilDate, todayCivilDate } from '../domain/civil-date.js';
+import { AppError } from '../errors/app-error.js';
 import { Prisma } from '../generated/prisma/client.js';
 import * as goalRepository from '../repositories/goalRepository.js';
 import type { GoalRecord } from '../repositories/goalRepository.js';
@@ -56,4 +57,46 @@ export async function listGoals(organizationId: bigint, today: Date = todayCivil
   const dados = await Promise.all(goals.map((goal) => toResponse(organizationId, goal, today)));
 
   return { dados };
+}
+
+function toGoalResponse(goal: GoalRecord) {
+  return {
+    id: goal.id.toString(),
+    descricao: goal.description,
+    valorAlvo: goal.targetAmount.toFixed(2),
+    prazo: formatCivilDate(goal.deadline),
+  };
+}
+
+export async function createGoal(
+  organizationId: bigint,
+  input: { description: string; targetAmount: string; deadline: Date },
+) {
+  const goal = await goalRepository.createGoal({
+    organizationId,
+    description: input.description,
+    targetAmount: new Prisma.Decimal(input.targetAmount),
+    deadline: input.deadline,
+    createdAt: new Date(),
+  });
+  return toGoalResponse(goal);
+}
+
+export async function updateGoal(
+  organizationId: bigint,
+  id: bigint,
+  changes: { description?: string; targetAmount?: string; deadline?: Date },
+) {
+  const current = await goalRepository.findGoalByIdInOrganization(id, organizationId);
+  if (!current) throw new AppError(404, 'Meta não encontrada');
+
+  const goal = await goalRepository.updateGoal(id, organizationId, {
+    ...(changes.description !== undefined ? { description: changes.description } : {}),
+    ...(changes.targetAmount !== undefined
+      ? { targetAmount: new Prisma.Decimal(changes.targetAmount) }
+      : {}),
+    ...(changes.deadline !== undefined ? { deadline: changes.deadline } : {}),
+  });
+  if (!goal) throw new AppError(404, 'Meta não encontrada');
+  return toGoalResponse(goal);
 }
