@@ -710,6 +710,51 @@ Erros:
 - `404`: lançamento ausente ou pertencente a outra organização;
 - `409`: lançamento já estornado.
 
+## Metas
+
+### `GET /metas`
+
+Exige autenticação. Qualquer membro com vínculo ativo consulta. Retorna só as metas da organização
+do contexto, ordenadas pelo prazo. Não aceita parâmetros de consulta (`400`).
+
+Sucesso `200`:
+
+```json
+{
+  "dados": [
+    {
+      "id": "3",
+      "descricao": "Reforma da sede",
+      "valorAlvo": "20000.00",
+      "prazo": "2026-12-31",
+      "valorArrecadado": "8000.00",
+      "percentual": 40,
+      "situacao": "EM_ANDAMENTO",
+      "situacaoDescricao": "Em andamento"
+    }
+  ]
+}
+```
+
+`percentual` é um número sem teto (150 indica meta superada). `situacao` pode ser:
+
+| `situacao`        | `situacaoDescricao` | Quando                                         |
+| ----------------- | ------------------- | ---------------------------------------------- |
+| `EM_ANDAMENTO`    | Em andamento        | abaixo do valor-alvo e prazo ainda não vencido |
+| `PRAZO_ENCERRADO` | Prazo encerrado     | abaixo do valor-alvo e prazo anterior a hoje   |
+| `CONCLUIDA`       | Concluída           | valor arrecadado igual ou acima do valor-alvo  |
+
+O prazo vale até o fim do dia. O rótulo "Concluída" não consta da especificação da US27.
+
+O lançamento não guarda a meta. O valor arrecadado soma as entradas ativas da organização com data
+entre o dia em que a meta foi criada e o prazo, inclusive. Estornos e saídas não contam.
+
+Erros:
+
+- `400`: parâmetro de consulta não reconhecido;
+- `401`: autenticação ausente ou inválida;
+- `403`: usuário sem vínculo ativo.
+
 ## Extrato e painéis
 
 ### `GET /extrato`
