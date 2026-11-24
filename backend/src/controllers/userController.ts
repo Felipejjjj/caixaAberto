@@ -122,11 +122,9 @@ async function updateUser(req: Request, res: Response, next: NextFunction) {
     // conferencias, vincular alguem pelo e-mail bastava para trocar a senha dessa pessoa e entrar
     // como ela nas outras organizacoes em que atua.
     if (await membershipRepository.hasActiveMembershipOutside(id, organizacaoId)) {
-      return res
-        .status(403)
-        .json({
-          erro: 'Os dados da conta de quem participa de outra organização só podem ser alterados pelo próprio usuário',
-        });
+      return res.status(403).json({
+        erro: 'Os dados da conta de quem participa de outra organização só podem ser alterados pelo próprio usuário',
+      });
     }
 
     if (email && email.toLowerCase() !== existingUser.email.toLowerCase()) {
