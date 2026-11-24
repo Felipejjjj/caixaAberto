@@ -16,6 +16,8 @@ const addMemberBodySchema = z
 
 const updateMemberRoleParamsSchema = z.object({ id: identifierSchema }).strict();
 
+const removeMemberParamsSchema = z.object({ id: identifierSchema }).strict();
+
 const updateMemberRoleBodySchema = z
   .object({
     papel: z.enum(roles),
@@ -72,6 +74,28 @@ export async function updateMemberRole(
       contexto.organizacaoId,
       params.id,
       body.papel,
+      contexto.usuarioId,
+    );
+
+    response.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+// DELETE /membros/:id
+export async function removeMember(
+  request: Request,
+  response: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const params = removeMemberParamsSchema.parse(request.params);
+
+    const contexto = getContexto(request);
+    const result = await membershipService.removeMember(
+      contexto.organizacaoId,
+      params.id,
       contexto.usuarioId,
     );
 

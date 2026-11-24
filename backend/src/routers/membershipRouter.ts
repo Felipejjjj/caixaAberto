@@ -13,4 +13,7 @@ router.use(authenticate, loadContext);
 // Ex.: PUT /membros/123/papel
 router.put('/:id/papel', requireRole('TESOUREIRO'), membershipController.updateMemberRole);
 
+// Desvincular um membro (exclusão lógica). Ex.: DELETE /membros/123
+router.delete('/:id', requireRole('TESOUREIRO'), membershipController.removeMember);
+
 export default router;

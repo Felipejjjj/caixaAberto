@@ -325,7 +325,7 @@ Erros:
 
 As rotas de consulta e vínculo trazem a organização no caminho. O `{id}` precisa ser a organização
 do contexto, resolvida pelo login e por `X-Organization-Id`; qualquer outra responde `404`, sem
-revelar se ela existe. A alteração de papel usa o ID do vínculo retornado pela listagem, não o ID do usuário.
+revelar se ela existe. A alteração de papel e o desvínculo usam o ID do vínculo retornado pela listagem, não o ID do usuário.
 
 ### `GET /organizacoes/{id}/membros`
 
@@ -416,6 +416,33 @@ Erros:
 - `403`: papel sem permissão, vínculo inativo ou vínculo de quem chama;
 - `404`: vínculo ausente, inativo ou pertencente a outra organização;
 - `409`: tentativa de rebaixar o último tesoureiro ativo ou conflito concorrente.
+
+### `DELETE /membros/{id}`
+
+Exige autenticação e papel `TESOUREIRO`. `{id}` é o ID do vínculo, conforme retornado por
+`GET /organizacoes/{id}/membros`. É exclusão lógica: o vínculo passa a `ativo: false` e a linha
+continua no banco. A pessoa perde o acesso à organização e sai da listagem de membros, e os
+lançamentos dela permanecem no extrato. Vincular a mesma pessoa de novo reativa o mesmo registro.
+Ninguém desvincula a si mesmo.
+
+Sem corpo. Sucesso `200`: devolve o vínculo já inativo.
+
+```json
+{
+  "id": "12",
+  "usuario": { "id": "5", "nome": "Maria", "email": "maria@grupo.org" },
+  "papel": "CONSULTOR",
+  "dataVinculo": "2026-09-24",
+  "ativo": false
+}
+```
+
+Erros:
+
+- `400`: ID inválido;
+- `401`: autenticação ausente ou inválida;
+- `403`: papel sem permissão, vínculo inativo de quem chama ou tentativa de desvincular a si mesmo;
+- `404`: vínculo ausente, já inativo ou de outra organização.
 
 ## Categorias
 
