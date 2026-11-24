@@ -60,22 +60,37 @@ export async function listTransactions(
   }
 }
 
-const exportTransactionsQuerySchema = periodQuerySchema.extend({
-  tipo: z.enum(transactionTypes).optional(),
-  categoriaId: identifierSchema.optional(),
-  usuarioId: identifierSchema.optional(),
-}).strict();
+const exportTransactionsQuerySchema = periodQuerySchema
+  .extend({
+    tipo: z.enum(transactionTypes).optional(),
+    categoriaId: identifierSchema.optional(),
+    usuarioId: identifierSchema.optional(),
+  })
+  .strict();
 
-export async function exportTransactions(request: Request, response: Response, next: NextFunction): Promise<void> {
+export async function exportTransactions(
+  request: Request,
+  response: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const query = exportTransactionsQuerySchema.parse(request.query);
-    const csv = await transactionListService.exportTransactionsCsv(getContexto(request).organizacaoId, {
-      startDate: query.dataInicio, endDate: query.dataFim, type: query.tipo,
-      categoryId: query.categoriaId, userId: query.usuarioId,
-    });
-    response.status(200)
+    const csv = await transactionListService.exportTransactionsCsv(
+      getContexto(request).organizacaoId,
+      {
+        startDate: query.dataInicio,
+        endDate: query.dataFim,
+        type: query.tipo,
+        categoryId: query.categoriaId,
+        userId: query.usuarioId,
+      },
+    );
+    response
+      .status(200)
       .set('Content-Type', 'text/csv; charset=utf-8')
       .set('Content-Disposition', 'attachment; filename="lancamentos.csv"')
       .send(csv);
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 }

@@ -98,7 +98,9 @@ export async function findTransactionsPage(
   return { items, total };
 }
 
-export async function findTransactionsForExport(filters: TransactionListFilters): Promise<TransactionListRecord[]> {
+export async function findTransactionsForExport(
+  filters: TransactionListFilters,
+): Promise<TransactionListRecord[]> {
   return prisma.transaction.findMany({
     where: buildWhere(filters),
     select: transactionListSelection,
