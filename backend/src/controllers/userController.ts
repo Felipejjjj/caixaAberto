@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
+import bcrypt from 'bcrypt';
 import { z } from 'zod';
 
 import type { User } from '../generated/prisma/client.js';
@@ -31,11 +32,10 @@ const updateUserSchema = z
   .object({
     name: z.string().trim().min(1).max(150).optional(),
     email: z.string().trim().max(150).pipe(z.email()).optional(),
+    password: z.string().min(8).max(72).optional(),
+    active: z.boolean().optional(),
   })
-  .strict()
-  .refine((body) => Object.keys(body).length > 0, {
-    error: 'Informe nome e/ou e-mail para alterar',
-  });
+  .strict();
 
 async function getUsers(req: Request, res: Response, next: NextFunction) {
   try {
@@ -107,8 +107,8 @@ async function createUser(req: Request, res: Response, next: NextFunction) {
 async function updateUser(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = z.object({ id: identifierSchema }).strict().parse(req.params);
-    const { name, email } = updateUserSchema.parse(req.body);
-    const { organizacaoId } = getContexto(req);
+    const { name, email, password, active } = updateUserSchema.parse(req.body);
+    const { usuarioId, organizacaoId } = getContexto(req);
 
     const existingUser = await userRepository.findByIdInOrganization(id, organizacaoId);
 
@@ -121,7 +121,17 @@ async function updateUser(req: Request, res: Response, next: NextFunction) {
     // A conta e global, mas o tesoureiro so responde pela propria organizacao. Sem estas
     // conferencias, vincular alguem pelo e-mail bastava para trocar a senha dessa pessoa e entrar
     // como ela nas outras organizacoes em que atua.
-    if (await membershipRepository.hasActiveMembershipOutside(id, organizacaoId)) {
+    const isOwnAccount = id === usuarioId;
+    if (password !== undefined && !isOwnAccount)
+      return res.status(403).json({ erro: 'A senha só pode ser alterada pelo próprio usuário' });
+    if (isOwnAccount && active === false)
+      return res.status(403).json({ erro: 'O usuário não pode inativar a própria conta' });
+    const changesAccount = name !== undefined || email !== undefined || active !== undefined;
+    if (
+      !isOwnAccount &&
+      changesAccount &&
+      (await membershipRepository.hasActiveMembershipOutside(id, organizacaoId))
+    ) {
       return res.status(403).json({
         erro: 'Os dados da conta de quem participa de outra organização só podem ser alterados pelo próprio usuário',
       });
@@ -140,6 +150,8 @@ async function updateUser(req: Request, res: Response, next: NextFunction) {
     const updatedUser = await userRepository.update(id, {
       ...(name !== undefined ? { name } : {}),
       ...(email !== undefined ? { email } : {}),
+      ...(password !== undefined ? { passwordHash: await bcrypt.hash(password, 10) } : {}),
+      ...(active !== undefined ? { active } : {}),
     });
 
     return res.json(serializeUser(updatedUser));
