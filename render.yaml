@@ -5,18 +5,19 @@
 # se as URLs ainda nao forem conhecidas, basta deixar qualquer valor e corrigir depois no painel,
 # conforme o passo a passo do README.
 
-# O Postgres gratuito do Render vence 30 dias depois de criado. O primeiro, caixa-aberto-db, venceu em
-# 17/10/2026 e foi suspenso; este e o substituto, criado no mesmo dia, e vence em 16/11/2026. Nome,
-# banco e usuario precisam bater com o que ja existe no painel, senao uma sincronizacao do blueprint
-# tenta recriar o banco ou volta a DATABASE_URL da API para o banco suspenso.
+# O Postgres gratuito do Render vence 30 dias depois de criado. O caixa-aberto-db venceu em
+# 17/10/2026 e o caixa-aberto-db-2 em 16/11/2026; este, caixa-aberto-db-3, foi criado em 24/11/2026
+# e vence em 24/12/2026. Nome, banco e usuario precisam bater com o que existe no painel, senao uma
+# sincronizacao do blueprint tenta recriar o banco ou volta a DATABASE_URL da API para um banco
+# suspenso.
 #
 # ipAllowList vazio deixa o banco acessivel so pela rede interna do Render, que e por onde a API
 # conecta. Para rodar o seed da maquina local, liberar o IP no painel e remover a regra depois; uma
 # sincronizacao do blueprint tambem remove.
 databases:
-  - name: caixa-aberto-db-2
-    databaseName: caixa_aberto_db_2
-    user: caixa_aberto_db_2_user
+  - name: caixa-aberto-db-3
+    databaseName: caixa_aberto_db_3
+    user: caixa_aberto_db_3_user
     plan: free
     region: oregon
     postgresMajorVersion: '18'
@@ -35,7 +36,7 @@ services:
         value: production
       - key: DATABASE_URL
         fromDatabase:
-          name: caixa-aberto-db-2
+          name: caixa-aberto-db-3
           property: connectionString
       - key: JWT_SECRET
         generateValue: true
