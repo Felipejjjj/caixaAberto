@@ -28,6 +28,21 @@ const listUsersQuerySchema = z
   })
   .strict();
 
+const updateUserSchema = z
+  .object({
+    name: z.string().trim().min(1).max(150).optional(),
+    email: z.string().trim().max(150).pipe(z.email()).optional(),
+    password: z.string().min(8).max(72).optional(),
+    active: z.boolean().optional(),
+  })
+  .strict();
+
+// Quem inativa a propria conta nao consegue mais entrar para desfazer, e se atuar em duas
+// organizacoes nenhum tesoureiro pode reativa-la.
+const ERRO_INATIVAR_PROPRIA_CONTA = 'O usuário não pode inativar a própria conta';
+const ERRO_CONTA_EM_OUTRA_ORGANIZACAO =
+  'Os dados da conta de quem participa de outra organização só podem ser alterados pelo próprio usuário';
+
 async function getUsers(req: Request, res: Response, next: NextFunction) {
   try {
     const query = listUsersQuerySchema.parse(req.query);
@@ -95,21 +110,10 @@ async function createUser(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-async function updateUser(req: Request, res: Response) {
+async function updateUser(req: Request, res: Response, next: NextFunction) {
   try {
-    const { id: idParam } = req.params;
-
-    if (!idParam || Array.isArray(idParam)) {
-      return res.status(400).json({
-        erro: 'ID de usuário inválido',
-      });
-    }
-
-    const id = BigInt(idParam);
-
-    //const id = BigInt(req.params.id)
-
-    const { name, email, password, active } = req.body;
+    const { id } = z.object({ id: identifierSchema }).strict().parse(req.params);
+    const { name, email, password, active } = updateUserSchema.parse(req.body);
     const { usuarioId, organizacaoId } = getContexto(req);
 
     const existingUser = await userRepository.findByIdInOrganization(id, organizacaoId);
@@ -132,12 +136,8 @@ async function updateUser(req: Request, res: Response) {
       });
     }
 
-    // Quem inativa a propria conta nao consegue mais entrar para desfazer, e se atuar em duas
-    // organizacoes nenhum tesoureiro pode reativa-la.
     if (isOwnAccount && active === false) {
-      return res.status(403).json({
-        erro: 'O usuário não pode inativar a própria conta',
-      });
+      return res.status(403).json({ erro: ERRO_INATIVAR_PROPRIA_CONTA });
     }
 
     // So consulta os outros vinculos quando ha dado da conta a mudar, para que um PUT vazio nao
@@ -147,13 +147,11 @@ async function updateUser(req: Request, res: Response) {
       changesAccount &&
       (await membershipRepository.hasActiveMembershipOutside(id, organizacaoId))
     ) {
-      return res.status(403).json({
-        erro: 'Os dados da conta de quem participa de outra organização só podem ser alterados pelo próprio usuário',
-      });
+      return res.status(403).json({ erro: ERRO_CONTA_EM_OUTRA_ORGANIZACAO });
     }
 
-    if (email && email !== existingUser.email) {
-      const emailInUse = await userRepository.findByEmail(email);
+    if (email && email.toLowerCase() !== existingUser.email.toLowerCase()) {
+      const emailInUse = await userRepository.findByEmailIgnoringCase(email);
 
       if (emailInUse) {
         return res.status(400).json({
@@ -162,59 +160,29 @@ async function updateUser(req: Request, res: Response) {
       }
     }
 
-    const data: {
-      name?: string;
-      email?: string;
-      passwordHash?: string;
-      active?: boolean;
-    } = {};
-
-    if (name !== undefined) {
-      data.name = name;
-    }
-
-    if (email !== undefined) {
-      data.email = email;
-    }
-
-    if (password !== undefined) {
-      data.passwordHash = await bcrypt.hash(password, 10);
-    }
-
-    if (active !== undefined) {
-      data.active = active;
-    }
-
-    const updatedUser = await userRepository.update(id, data);
+    const updatedUser = await userRepository.update(id, {
+      ...(name !== undefined ? { name } : {}),
+      ...(email !== undefined ? { email } : {}),
+      ...(password !== undefined ? { passwordHash: await bcrypt.hash(password, 10) } : {}),
+      ...(active !== undefined ? { active } : {}),
+    });
 
     return res.json(serializeUser(updatedUser));
   } catch (error) {
-    console.error(error);
-
-    return res.status(400).json({
-      erro: 'Erro ao atualizar usuário',
-    });
+    next(error);
   }
 }
 
-async function deleteUser(req: Request, res: Response) {
+// Inativa a conta (active = false) em vez de apaga-la, preservando vinculos e historico. As regras
+// sao as mesmas do PUT com active = false: a conta e global, entao o tesoureiro nao inativa a propria
+// nem a de quem atua em outra organizacao. Para tirar alguem so desta organizacao, ha o
+// desvinculo de membro.
+async function deleteUser(req: Request, res: Response, next: NextFunction) {
   try {
-    const { id: idParam } = req.params;
+    const { id } = z.object({ id: identifierSchema }).strict().parse(req.params);
+    const { usuarioId, organizacaoId } = getContexto(req);
 
-    if (!idParam || Array.isArray(idParam)) {
-      return res.status(400).json({
-        erro: 'ID de usuário inválido',
-      });
-    }
-
-    const id = BigInt(idParam);
-
-    //const id = BigInt(req.params.id)
-
-    const existingUser = await userRepository.findByIdInOrganization(
-      id,
-      getContexto(req).organizacaoId,
-    );
+    const existingUser = await userRepository.findByIdInOrganization(id, organizacaoId);
 
     if (!existingUser) {
       return res.status(404).json({
@@ -222,15 +190,19 @@ async function deleteUser(req: Request, res: Response) {
       });
     }
 
-    await userRepository.deleteById(id);
+    if (id === usuarioId) {
+      return res.status(403).json({ erro: ERRO_INATIVAR_PROPRIA_CONTA });
+    }
 
-    return res.status(204).send();
+    if (await membershipRepository.hasActiveMembershipOutside(id, organizacaoId)) {
+      return res.status(403).json({ erro: ERRO_CONTA_EM_OUTRA_ORGANIZACAO });
+    }
+
+    const deactivated = await userRepository.deactivateInOrganization(id, organizacaoId);
+    if (!deactivated) return res.status(404).json({ erro: 'Usuário não encontrado ou já inativo' });
+    return res.status(200).json({ id: id.toString(), active: false });
   } catch (error) {
-    console.error(error);
-
-    return res.status(400).json({
-      erro: 'Não foi possível excluir o usuário',
-    });
+    next(error);
   }
 }
 
