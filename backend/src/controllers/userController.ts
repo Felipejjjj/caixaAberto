@@ -27,10 +27,15 @@ const listUsersQuerySchema = z
   })
   .strict();
 
-const updateUserSchema = z.object({
-  name: z.string().trim().min(1).max(150).optional(),
-  email: z.string().trim().max(150).pipe(z.email()).optional(),
-}).strict().refine((body) => Object.keys(body).length > 0, { error: 'Informe nome e/ou e-mail para alterar' });
+const updateUserSchema = z
+  .object({
+    name: z.string().trim().min(1).max(150).optional(),
+    email: z.string().trim().max(150).pipe(z.email()).optional(),
+  })
+  .strict()
+  .refine((body) => Object.keys(body).length > 0, {
+    error: 'Informe nome e/ou e-mail para alterar',
+  });
 
 async function getUsers(req: Request, res: Response, next: NextFunction) {
   try {
@@ -117,7 +122,11 @@ async function updateUser(req: Request, res: Response, next: NextFunction) {
     // conferencias, vincular alguem pelo e-mail bastava para trocar a senha dessa pessoa e entrar
     // como ela nas outras organizacoes em que atua.
     if (await membershipRepository.hasActiveMembershipOutside(id, organizacaoId)) {
-      return res.status(403).json({ erro: 'Os dados da conta de quem participa de outra organização só podem ser alterados pelo próprio usuário' });
+      return res
+        .status(403)
+        .json({
+          erro: 'Os dados da conta de quem participa de outra organização só podem ser alterados pelo próprio usuário',
+        });
     }
 
     if (email && email.toLowerCase() !== existingUser.email.toLowerCase()) {
@@ -130,7 +139,10 @@ async function updateUser(req: Request, res: Response, next: NextFunction) {
       }
     }
 
-    const updatedUser = await userRepository.update(id, { ...(name !== undefined ? { name } : {}), ...(email !== undefined ? { email } : {}) });
+    const updatedUser = await userRepository.update(id, {
+      ...(name !== undefined ? { name } : {}),
+      ...(email !== undefined ? { email } : {}),
+    });
 
     return res.json(serializeUser(updatedUser));
   } catch (error) {
@@ -155,7 +167,10 @@ async function deleteUser(req: Request, res: Response) {
       });
     }
 
-    const deactivated = await userRepository.deactivateInOrganization(id, getContexto(req).organizacaoId);
+    const deactivated = await userRepository.deactivateInOrganization(
+      id,
+      getContexto(req).organizacaoId,
+    );
     if (!deactivated) return res.status(404).json({ erro: 'Usuário não encontrado ou já inativo' });
     return res.status(200).json({ id: id.toString(), active: false });
   } catch (error) {
