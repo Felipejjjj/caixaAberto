@@ -146,3 +146,30 @@ export async function changeMemberRole(
 
   return toResponse(updatedMember);
 }
+
+// Desvincula o membro: o vínculo fica inativo, mas o registro e os lançamentos permanecem.
+export async function removeMember(
+  organizationId: bigint,
+  membershipId: bigint,
+  requesterUserId: bigint,
+): Promise<MemberResponse> {
+  let removed: MemberRecord | null;
+  try {
+    removed = await membershipRepository.deactivateActiveMember(
+      membershipId,
+      organizationId,
+      requesterUserId,
+    );
+  } catch (error) {
+    if (error instanceof membershipRepository.OwnMembershipRemovalError) {
+      throw new AppError(403, error.message);
+    }
+    throw error;
+  }
+
+  if (!removed) {
+    throw new AppError(404, MEMBER_NOT_FOUND);
+  }
+
+  return toResponse(removed);
+}

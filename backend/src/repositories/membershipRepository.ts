@@ -169,3 +169,32 @@ export async function updateActiveMemberRole(
     { isolationLevel: 'Serializable' },
   );
 }
+
+export class OwnMembershipRemovalError extends Error {
+  constructor() {
+    super('Você não pode desvincular a si mesmo');
+    this.name = 'OwnMembershipRemovalError';
+  }
+}
+
+// Exclusão lógica: o vínculo fica inativo, a linha e os lançamentos continuam no banco.
+export async function deactivateActiveMember(
+  id: bigint,
+  organizationId: bigint,
+  requesterUserId: bigint,
+): Promise<MemberRecord | null> {
+  const current = await prisma.membership.findFirst({
+    where: { id, organizationId, active: true },
+    select: { userId: true },
+  });
+
+  if (!current) return null;
+
+  if (current.userId === requesterUserId) throw new OwnMembershipRemovalError();
+
+  return prisma.membership.update({
+    where: { id },
+    data: { active: false },
+    select: memberSelection,
+  });
+}
