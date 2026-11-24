@@ -71,3 +71,21 @@ export async function listTransactions(
     },
   };
 }
+
+function csvField(value: string): string {
+  return `"${value.replaceAll('"', '""')}"`;
+}
+
+export async function exportTransactionsCsv(
+  organizationId: bigint,
+  filters: Omit<TransactionListQuery, 'page' | 'pageSize'>,
+): Promise<string> {
+  const rows = await transactionListRepository.findTransactionsForExport({ organizationId, ...filters });
+  const header = ['id', 'data', 'descricao', 'categoria_id', 'categoria', 'valor', 'tipo', 'status', 'usuario_id', 'possui_comprovante'];
+  const lines = rows.map((row) => [
+    row.id.toString(), formatCivilDate(row.date), row.description, row.category.id.toString(),
+    row.category.name, row.amount.toFixed(2), row.type, row.status,
+    row.userId.toString(), row.receipt !== null ? 'sim' : 'nao',
+  ]);
+  return `\uFEFF${[header, ...lines].map((line) => line.map(csvField).join(',')).join('\r\n')}\r\n`;
+}

@@ -18,6 +18,7 @@ export interface TransactionListPagination {
 
 export interface TransactionListRecord {
   id: bigint;
+  userId: bigint;
   date: Date;
   description: string;
   amount: Prisma.Decimal;
@@ -37,6 +38,7 @@ export interface TransactionListPage {
 // proprio status; excluir estorno e responsabilidade do saldo.
 const transactionListSelection = {
   id: true,
+  userId: true,
   date: true,
   description: true,
   amount: true,
@@ -94,4 +96,12 @@ export async function findTransactionsPage(
   ]);
 
   return { items, total };
+}
+
+export async function findTransactionsForExport(filters: TransactionListFilters): Promise<TransactionListRecord[]> {
+  return prisma.transaction.findMany({
+    where: buildWhere(filters),
+    select: transactionListSelection,
+    orderBy: [{ date: 'desc' }, { id: 'desc' }],
+  });
 }
