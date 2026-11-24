@@ -9,8 +9,15 @@ async function findAll() {
   });
 }
 
-// Usuarios visiveis sao os que tem vinculo ativo com a organizacao de quem consulta.
-async function findAllByOrganization(organizationId: bigint) {
+// O contains do Prisma não escapa % e _, então eles são escapados aqui para valerem como texto.
+function escapeLikePattern(value: string): string {
+  return value.replace(/[\\%_]/g, (character) => `\\${character}`);
+}
+
+// Usuários com vínculo ativo na organização. `search` é um trecho do nome ou do e-mail.
+async function findAllByOrganization(organizationId: bigint, search?: string) {
+  const pattern = search ? escapeLikePattern(search) : undefined;
+
   return prisma.user.findMany({
     where: {
       memberships: {
@@ -19,6 +26,14 @@ async function findAllByOrganization(organizationId: bigint) {
           active: true,
         },
       },
+      ...(pattern
+        ? {
+            OR: [
+              { name: { contains: pattern, mode: 'insensitive' } },
+              { email: { contains: pattern, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
     },
     orderBy: {
       createdAt: 'desc',

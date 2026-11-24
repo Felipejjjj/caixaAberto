@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import bcrypt from 'bcrypt';
+import { z } from 'zod';
 
 import type { User } from '../generated/prisma/client.js';
 import { formatCivilDate } from '../domain/civil-date.js';
@@ -21,13 +22,24 @@ function serializeUser(user: User) {
   };
 }
 
-async function getUsers(req: Request, res: Response) {
+const listUsersQuerySchema = z
+  .object({
+    busca: z.string().trim().max(150, 'A busca deve ter no máximo 150 caracteres').optional(),
+  })
+  .strict();
+
+async function getUsers(req: Request, res: Response, next: NextFunction) {
   try {
+    const query = listUsersQuerySchema.parse(req.query);
     const { organizacaoId } = getContexto(req);
-    const users = await userRepository.findAllByOrganization(organizacaoId);
+    const users = await userRepository.findAllByOrganization(organizacaoId, query.busca);
 
     return res.json(users.map(serializeUser));
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(error);
+    }
+
     console.error(error);
 
     return res.status(500).json({

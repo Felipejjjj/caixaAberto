@@ -213,6 +213,11 @@ Erros:
 
 Compatibilidade atual: responde em `GET /users` e devolve um array com propriedades em inglês.
 
+Query opcional `busca`: trecho do nome ou do e-mail, sem diferenciar maiúsculas de minúsculas
+(`busca=maria` acha "Maria Souza" e `joao@maria-grupo.org`). Vazia, lista todos. A lista traz só quem
+tem vínculo ativo com a organização do contexto, com a situação da conta em `active`. A senha nunca é
+devolvida. Outros parâmetros, ou `busca` com mais de 150 caracteres, respondem `400`.
+
 ### `GET /usuarios/{id}`
 
 Exige autenticação e papel `TESOUREIRO`.
