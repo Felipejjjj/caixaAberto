@@ -24,6 +24,7 @@ import transactionListRouter from './routers/transactionListRouter.js';
 import transactionReversalRouter from './routers/transactionReversalRouter.js';
 import transactionRouter from './routers/transactionRouter.js';
 import transparencyRouter from './routers/transparencyRouter.js';
+import goalRouter from './routers/goalRouter.js';
 import membershipRouter from './routers/membershipRouter.js';
 
 function authenticateTestRequest(request: Request, response: Response, next: NextFunction) {
@@ -91,6 +92,7 @@ export function createApp() {
   app.use('/transactions', transactionRouter);
   app.use('/transparency', transparencyRouter);
   app.use('/membros', membershipRouter);
+  app.use('/metas', goalRouter);
 
   app.use((_request, _response, next) => {
     next(new AppError(404, 'Rota não encontrada'));
