@@ -79,4 +79,44 @@ describe('alteração e inativação de usuários', () => {
         .status,
     ).toBe(403);
   });
+
+  it('não deixa o tesoureiro inativar a própria conta pela exclusão', async () => {
+    const owner = await createUser();
+    const organization = await createOrganization();
+    await createMembership({
+      userId: owner.id,
+      organizationId: organization.id,
+      role: 'TESOUREIRO',
+    });
+
+    const response = await request(createApp())
+      .delete(`/users/${owner.id}`)
+      .set('Authorization', createAuthorizationHeader(owner));
+
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({ erro: 'O usuário não pode inativar a própria conta' });
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: owner.id } })).active).toBe(true);
+  });
+
+  it('não inativa pela exclusão a conta de quem tem vínculo ativo em outra organização', async () => {
+    const ctx = await setup();
+    const other = await createOrganization();
+    const user = await createUser();
+    await createMembership({
+      userId: user.id,
+      organizationId: ctx.organization.id,
+      role: 'CONSULTOR',
+    });
+    await createMembership({ userId: user.id, organizationId: other.id, role: 'TESOUREIRO' });
+
+    const response = await request(createApp())
+      .delete(`/users/${user.id}`)
+      .set('Authorization', ctx.authorization);
+
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({
+      erro: 'Os dados da conta de quem participa de outra organização só podem ser alterados pelo próprio usuário',
+    });
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).active).toBe(true);
+  });
 });

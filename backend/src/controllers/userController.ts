@@ -37,6 +37,12 @@ const updateUserSchema = z
   })
   .strict();
 
+// Quem inativa a propria conta nao consegue mais entrar para desfazer, e se atuar em duas
+// organizacoes nenhum tesoureiro pode reativa-la.
+const ERRO_INATIVAR_PROPRIA_CONTA = 'O usuário não pode inativar a própria conta';
+const ERRO_CONTA_EM_OUTRA_ORGANIZACAO =
+  'Os dados da conta de quem participa de outra organização só podem ser alterados pelo próprio usuário';
+
 async function getUsers(req: Request, res: Response, next: NextFunction) {
   try {
     const query = listUsersQuerySchema.parse(req.query);
@@ -122,19 +128,26 @@ async function updateUser(req: Request, res: Response, next: NextFunction) {
     // conferencias, vincular alguem pelo e-mail bastava para trocar a senha dessa pessoa e entrar
     // como ela nas outras organizacoes em que atua.
     const isOwnAccount = id === usuarioId;
-    if (password !== undefined && !isOwnAccount)
-      return res.status(403).json({ erro: 'A senha só pode ser alterada pelo próprio usuário' });
-    if (isOwnAccount && active === false)
-      return res.status(403).json({ erro: 'O usuário não pode inativar a própria conta' });
     const changesAccount = name !== undefined || email !== undefined || active !== undefined;
+
+    if (password !== undefined && !isOwnAccount) {
+      return res.status(403).json({
+        erro: 'A senha só pode ser alterada pelo próprio usuário',
+      });
+    }
+
+    if (isOwnAccount && active === false) {
+      return res.status(403).json({ erro: ERRO_INATIVAR_PROPRIA_CONTA });
+    }
+
+    // So consulta os outros vinculos quando ha dado da conta a mudar, para que um PUT vazio nao
+    // revele se o membro participa de outra organizacao.
     if (
       !isOwnAccount &&
       changesAccount &&
       (await membershipRepository.hasActiveMembershipOutside(id, organizacaoId))
     ) {
-      return res.status(403).json({
-        erro: 'Os dados da conta de quem participa de outra organização só podem ser alterados pelo próprio usuário',
-      });
+      return res.status(403).json({ erro: ERRO_CONTA_EM_OUTRA_ORGANIZACAO });
     }
 
     if (email && email.toLowerCase() !== existingUser.email.toLowerCase()) {
@@ -160,16 +173,16 @@ async function updateUser(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-async function deleteUser(req: Request, res: Response) {
+// Inativa a conta (active = false) em vez de apaga-la, preservando vinculos e historico. As regras
+// sao as mesmas do PUT com active = false: a conta e global, entao o tesoureiro nao inativa a propria
+// nem a de quem atua em outra organizacao. Para tirar alguem so desta organizacao, ha o
+// desvinculo de membro.
+async function deleteUser(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = z.object({ id: identifierSchema }).strict().parse(req.params);
+    const { usuarioId, organizacaoId } = getContexto(req);
 
-    //const id = BigInt(req.params.id)
-
-    const existingUser = await userRepository.findByIdInOrganization(
-      id,
-      getContexto(req).organizacaoId,
-    );
+    const existingUser = await userRepository.findByIdInOrganization(id, organizacaoId);
 
     if (!existingUser) {
       return res.status(404).json({
@@ -177,18 +190,19 @@ async function deleteUser(req: Request, res: Response) {
       });
     }
 
-    const deactivated = await userRepository.deactivateInOrganization(
-      id,
-      getContexto(req).organizacaoId,
-    );
+    if (id === usuarioId) {
+      return res.status(403).json({ erro: ERRO_INATIVAR_PROPRIA_CONTA });
+    }
+
+    if (await membershipRepository.hasActiveMembershipOutside(id, organizacaoId)) {
+      return res.status(403).json({ erro: ERRO_CONTA_EM_OUTRA_ORGANIZACAO });
+    }
+
+    const deactivated = await userRepository.deactivateInOrganization(id, organizacaoId);
     if (!deactivated) return res.status(404).json({ erro: 'Usuário não encontrado ou já inativo' });
     return res.status(200).json({ id: id.toString(), active: false });
   } catch (error) {
-    console.error(error);
-
-    return res.status(400).json({
-      erro: 'Não foi possível excluir o usuário',
-    });
+    next(error);
   }
 }
 
