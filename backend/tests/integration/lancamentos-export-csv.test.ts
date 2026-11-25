@@ -22,7 +22,7 @@ describe('exportação CSV de lançamentos', () => {
     const ctx = await context();
     const category = await createCategory({
       organizationId: ctx.organization.id,
-      name: 'Doações, gerais',
+      name: 'Doações; gerais',
       type: 'ENTRADA',
     });
     const row = await createTransaction({
@@ -30,7 +30,7 @@ describe('exportação CSV de lançamentos', () => {
       userId: ctx.user.id,
       categoryId: category.id,
       date: new Date('2026-09-10T00:00:00Z'),
-      description: 'Doação "especial"',
+      description: '=1+1',
       amount: '25.50',
     });
     const foreignUser = await createUser();
@@ -53,10 +53,73 @@ describe('exportação CSV de lançamentos', () => {
     expect(response.headers['content-disposition']).toContain(
       'attachment; filename="lancamentos.csv"',
     );
-    expect(response.text).toContain('"id","data","descricao"');
-    expect(response.text).toContain(`"${row.id}","2026-09-10","Doação ""especial"""`);
-    expect(response.text).toContain('"Doações, gerais"');
+    expect(response.text).toContain('"id";"data";"descricao"');
+    expect(response.text).toContain(`"${row.id}";"2026-09-10";"'=1+1"`);
+    expect(response.text).toContain('"Doações; gerais"');
     expect(response.text).not.toContain('SEGREDO-OUTRA-ORGANIZACAO');
+  });
+
+  it('aplica filtros por categoria e usuário e exclui lançamentos fora do período', async () => {
+    const ctx = await context();
+    const otherUser = await createUser();
+    await createMembership({
+      userId: otherUser.id,
+      organizationId: ctx.organization.id,
+      role: 'CONSULTOR',
+    });
+    const selectedCategory = await createCategory({
+      organizationId: ctx.organization.id,
+      name: 'Selecionada',
+      type: 'ENTRADA',
+    });
+    const otherCategory = await createCategory({
+      organizationId: ctx.organization.id,
+      name: 'Outra',
+      type: 'ENTRADA',
+    });
+    const matching = await createTransaction({
+      organizationId: ctx.organization.id,
+      userId: ctx.user.id,
+      categoryId: selectedCategory.id,
+      date: new Date('2026-09-10T00:00:00Z'),
+      description: 'CORRESPONDENTE',
+    });
+    await createTransaction({
+      organizationId: ctx.organization.id,
+      userId: otherUser.id,
+      categoryId: selectedCategory.id,
+      date: new Date('2026-09-10T00:00:00Z'),
+      description: 'OUTRO-USUARIO',
+    });
+    await createTransaction({
+      organizationId: ctx.organization.id,
+      userId: ctx.user.id,
+      categoryId: otherCategory.id,
+      date: new Date('2026-09-10T00:00:00Z'),
+      description: 'OUTRA-CATEGORIA',
+    });
+    await createTransaction({
+      organizationId: ctx.organization.id,
+      userId: ctx.user.id,
+      categoryId: selectedCategory.id,
+      date: new Date('2026-10-01T00:00:00Z'),
+      description: 'FORA-DO-PERIODO',
+    });
+
+    const response = await request(createApp())
+      .get('/lancamentos/export.csv')
+      .query({
+        dataInicio: '2026-09-01',
+        dataFim: '2026-09-30',
+        categoriaId: selectedCategory.id.toString(),
+        usuarioId: ctx.user.id.toString(),
+      })
+      .set('Authorization', ctx.authorization);
+    expect(response.status).toBe(200);
+    expect(response.text).toContain(`"${matching.id}"`);
+    expect(response.text).not.toContain('OUTRO-USUARIO');
+    expect(response.text).not.toContain('OUTRA-CATEGORIA');
+    expect(response.text).not.toContain('FORA-DO-PERIODO');
   });
 
   it.each([

@@ -76,6 +76,11 @@ function csvField(value: string): string {
   return `"${value.replaceAll('"', '""')}"`;
 }
 
+function csvTextField(value: string): string {
+  const safeValue = /^[=+\-@]/.test(value) ? `'${value}` : value;
+  return csvField(safeValue);
+}
+
 export async function exportTransactionsCsv(
   organizationId: bigint,
   filters: Omit<TransactionListQuery, 'page' | 'pageSize'>,
@@ -108,5 +113,13 @@ export async function exportTransactionsCsv(
     row.userId.toString(),
     row.receipt !== null ? 'sim' : 'nao',
   ]);
-  return `\uFEFF${[header, ...lines].map((line) => line.map(csvField).join(',')).join('\r\n')}\r\n`;
+  const csvLines = [
+    header.map(csvField),
+    ...lines.map((line) =>
+      line.map((value, index) =>
+        index === 2 || index === 4 ? csvTextField(value) : csvField(value),
+      ),
+    ),
+  ];
+  return `\uFEFF${csvLines.map((line) => line.join(';')).join('\r\n')}\r\n`;
 }
