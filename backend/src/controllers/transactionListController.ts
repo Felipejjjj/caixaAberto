@@ -5,6 +5,7 @@ import { transactionTypes } from '../domain/transaction.js';
 import { getContexto } from '../middlewares/load-context.js';
 import { civilDateSchema } from '../schemas/civil-date.js';
 import { identifierSchema } from '../schemas/identifier.js';
+import { periodQuerySchema } from '../schemas/period.js';
 import * as transactionListService from '../services/transactionListService.js';
 
 const DEFAULT_PAGE = 1;
@@ -54,6 +55,41 @@ export async function listTransactions(
       },
     );
     response.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+const exportTransactionsQuerySchema = periodQuerySchema
+  .extend({
+    tipo: z.enum(transactionTypes).optional(),
+    categoriaId: identifierSchema.optional(),
+    usuarioId: identifierSchema.optional(),
+  })
+  .strict();
+
+export async function exportTransactions(
+  request: Request,
+  response: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const query = exportTransactionsQuerySchema.parse(request.query);
+    const csv = await transactionListService.exportTransactionsCsv(
+      getContexto(request).organizacaoId,
+      {
+        startDate: query.dataInicio,
+        endDate: query.dataFim,
+        type: query.tipo,
+        categoryId: query.categoriaId,
+        userId: query.usuarioId,
+      },
+    );
+    response
+      .status(200)
+      .set('Content-Type', 'text/csv; charset=utf-8')
+      .set('Content-Disposition', 'attachment; filename="lancamentos.csv"')
+      .send(csv);
   } catch (error) {
     next(error);
   }

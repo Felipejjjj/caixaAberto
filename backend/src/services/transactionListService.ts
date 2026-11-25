@@ -71,3 +71,55 @@ export async function listTransactions(
     },
   };
 }
+
+function csvField(value: string): string {
+  return `"${value.replaceAll('"', '""')}"`;
+}
+
+function csvTextField(value: string): string {
+  const safeValue = /^[=+\-@]/.test(value) ? `'${value}` : value;
+  return csvField(safeValue);
+}
+
+export async function exportTransactionsCsv(
+  organizationId: bigint,
+  filters: Omit<TransactionListQuery, 'page' | 'pageSize'>,
+): Promise<string> {
+  const rows = await transactionListRepository.findTransactionsForExport({
+    organizationId,
+    ...filters,
+  });
+  const header = [
+    'id',
+    'data',
+    'descricao',
+    'categoria_id',
+    'categoria',
+    'valor',
+    'tipo',
+    'status',
+    'usuario_id',
+    'possui_comprovante',
+  ];
+  const lines = rows.map((row) => [
+    row.id.toString(),
+    formatCivilDate(row.date),
+    row.description,
+    row.category.id.toString(),
+    row.category.name,
+    row.amount.toFixed(2),
+    row.type,
+    row.status,
+    row.userId.toString(),
+    row.receipt !== null ? 'sim' : 'nao',
+  ]);
+  const csvLines = [
+    header.map(csvField),
+    ...lines.map((line) =>
+      line.map((value, index) =>
+        index === 2 || index === 4 ? csvTextField(value) : csvField(value),
+      ),
+    ),
+  ];
+  return `\uFEFF${csvLines.map((line) => line.join(';')).join('\r\n')}\r\n`;
+}
