@@ -17,6 +17,7 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { StatementPage } from './pages/StatementPage';
 import { TransactionDetailPage } from './pages/TransactionDetailPage';
 import { TransactionsListPage } from './pages/TransactionsListPage';
+import { UserEditPage } from './pages/UserEditPage';
 import { UserRegistrationPage } from './pages/UserRegistrationPage';
 
 export function App() {
@@ -50,6 +51,7 @@ export function App() {
 
           <Route element={<RotaTesoureiro />}>
             <Route path="membros/novo" element={<UserRegistrationPage />} />
+            <Route path="membros/:id/editar" element={<UserEditPage />} />
             <Route path="editar" element={<OrganizationFormPage modo="editar" />} />
             <Route path="link-publico" element={<PublicLinkManagementPage />} />
           </Route>

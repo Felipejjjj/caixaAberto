@@ -56,6 +56,7 @@ export function MembersPage() {
   const [erroVinculo, setErroVinculo] = useState<string | null>(null);
 
   const [alterandoId, setAlterandoId] = useState<string | null>(null);
+  const [inativandoId, setInativandoId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelado = false;
@@ -154,6 +155,30 @@ export function MembersPage() {
     }
   }
 
+  async function handleInativar(membro: Member) {
+    const confirmado = window.confirm(
+      `Inativar a conta de ${membro.usuario.nome}? O vínculo e os lançamentos históricos serão preservados.`,
+    );
+
+    if (!confirmado) return;
+
+    setInativandoId(membro.usuario.id);
+    setErro(null);
+    setMensagem(null);
+
+    try {
+      await apiRequest(`/users/${membro.usuario.id}`, { method: 'DELETE' });
+      setMembros((atual) => atual.filter((item) => item.usuario.id !== membro.usuario.id));
+      setMensagem(
+        `${membro.usuario.nome} foi inativado. O vínculo e os lançamentos históricos foram preservados.`,
+      );
+    } catch (error) {
+      setErro(error instanceof ApiError ? error.message : 'Não foi possível inativar o usuário');
+    } finally {
+      setInativandoId(null);
+    }
+  }
+
   return (
     <main data-largura="ampla">
       <div className="cabecalho-pagina">
@@ -214,6 +239,7 @@ export function MembersPage() {
                 <th>E-mail</th>
                 <th>Papel</th>
                 <th>Vínculo desde</th>
+                {escrita && <th>Ações</th>}
               </tr>
             </thead>
             {carregando ? (
@@ -256,6 +282,29 @@ export function MembersPage() {
                       <td data-coluna="texto" data-campo="vinculo" data-rotulo="Vínculo desde">
                         {formatarData(membro.dataVinculo)}
                       </td>
+                      {escrita && (
+                        <td data-coluna="acao" data-campo="acoes" data-rotulo="Ações">
+                          <div className="acoes">
+                            <Link
+                              className="acao"
+                              data-variante="secundario"
+                              to={`/organizacao/membros/${membro.usuario.id}/editar`}
+                            >
+                              Editar
+                            </Link>
+                            {!ehVoce && (
+                              <button
+                                type="button"
+                                data-variante="perigo"
+                                onClick={() => void handleInativar(membro)}
+                                disabled={inativandoId === membro.usuario.id}
+                              >
+                                {inativandoId === membro.usuario.id ? 'Inativando...' : 'Inativar'}
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
