@@ -7,6 +7,7 @@ import { podeEscrever } from '../lib/session';
 const SECOES = [
   { to: '/organizacao/membros', rotulo: 'Membros' },
   { to: '/organizacao/categorias', rotulo: 'Categorias' },
+  { to: '/organizacao/metas', rotulo: 'Metas' },
   { to: '/organizacao/editar', rotulo: 'Dados', somenteEscrita: true },
   { to: '/organizacao/link-publico', rotulo: 'Link público', somenteEscrita: true },
 ];

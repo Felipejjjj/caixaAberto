@@ -6,6 +6,7 @@ import { RotaTesoureiro } from './components/RotaTesoureiro';
 import { CategoriesPage } from './pages/CategoriesPage';
 import { EditTransactionPage } from './pages/EditTransactionPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { GoalsPage } from './pages/GoalsPage';
 import { LoginPage } from './pages/LoginPage';
 import { MembersPage } from './pages/MembersPage';
 import { NewInflowPage } from './pages/NewInflowPage';
@@ -47,6 +48,7 @@ export function App() {
           <Route index element={<Navigate to="membros" replace />} />
           <Route path="membros" element={<MembersPage />} />
           <Route path="categorias" element={<CategoriesPage />} />
+          <Route path="metas" element={<GoalsPage />} />
 
           <Route element={<RotaTesoureiro />}>
             <Route path="membros/novo" element={<UserRegistrationPage />} />
