@@ -54,7 +54,7 @@ describe('consultar membros e papéis (US12)', () => {
     ]);
     expect(response.body.dados[0]).toEqual({
       id: ana.membership.id.toString(),
-      usuario: { id: ana.user.id.toString(), nome: 'Ana', email: ana.user.email },
+      usuario: { id: ana.user.id.toString(), nome: 'Ana', email: ana.user.email, ativo: true },
       papel: 'TESOUREIRO',
       dataVinculo: '2026-02-01',
       ativo: true,

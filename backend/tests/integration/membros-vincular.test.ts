@@ -46,7 +46,7 @@ describe('vincular usuário à organização (US09)', () => {
     expect(response.status).toBe(201);
     expect(response.body).toEqual({
       id: expect.any(String),
-      usuario: { id: maria.id.toString(), nome: 'Maria', email: 'maria@grupo.org' },
+      usuario: { id: maria.id.toString(), nome: 'Maria', email: 'maria@grupo.org', ativo: true },
       papel: 'CONSULTOR',
       dataVinculo: '2026-09-24',
       ativo: true,

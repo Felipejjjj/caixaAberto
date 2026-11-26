@@ -7,7 +7,7 @@ export interface MemberRecord {
   role: string;
   linkedAt: Date;
   active: boolean;
-  user: { id: bigint; name: string; email: string };
+  user: { id: bigint; name: string; email: string; active: boolean };
 }
 
 export interface NewMembershipData {
@@ -27,6 +27,7 @@ const memberSelection = {
       id: true,
       name: true,
       email: true,
+      active: true,
     },
   },
 } satisfies Prisma.MembershipSelect;

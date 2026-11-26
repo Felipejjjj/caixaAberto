@@ -337,6 +337,10 @@ revelar se ela existe. A alteração de papel e o desvínculo usam o ID do vínc
 Exige autenticação. Qualquer membro com vínculo ativo consulta. Retorna só os vínculos ativos da
 organização, ordenados pelo nome do usuário.
 
+`ativo` é a situação do vínculo nesta organização; `usuario.ativo` é a da conta, que é global. Uma
+conta inativada por `DELETE /users/{id}` continua na lista, com `usuario.ativo` igual a `false`, porque
+o vínculo e o histórico são preservados.
+
 Sucesso `200`:
 
 ```json
@@ -344,7 +348,7 @@ Sucesso `200`:
   "dados": [
     {
       "id": "12",
-      "usuario": { "id": "5", "nome": "Maria", "email": "maria@grupo.org" },
+      "usuario": { "id": "5", "nome": "Maria", "email": "maria@grupo.org", "ativo": true },
       "papel": "CONSULTOR",
       "dataVinculo": "2026-09-24",
       "ativo": true
@@ -380,7 +384,7 @@ Sucesso `201`:
 ```json
 {
   "id": "12",
-  "usuario": { "id": "5", "nome": "Maria", "email": "maria@grupo.org" },
+  "usuario": { "id": "5", "nome": "Maria", "email": "maria@grupo.org", "ativo": true },
   "papel": "CONSULTOR",
   "dataVinculo": "2026-09-24",
   "ativo": true
@@ -435,7 +439,7 @@ Sem corpo. Sucesso `200`: devolve o vínculo já inativo.
 ```json
 {
   "id": "12",
-  "usuario": { "id": "5", "nome": "Maria", "email": "maria@grupo.org" },
+  "usuario": { "id": "5", "nome": "Maria", "email": "maria@grupo.org", "ativo": true },
   "papel": "CONSULTOR",
   "dataVinculo": "2026-09-24",
   "ativo": false

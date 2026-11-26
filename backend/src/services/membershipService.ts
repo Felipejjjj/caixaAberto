@@ -13,9 +13,11 @@ const MEMBER_NOT_FOUND = 'Membro ativo não encontrado na organização';
 // Todo vinculo comeca como consultor. Dar o papel de tesoureiro e a alteracao de papel da US10.
 const DEFAULT_ROLE: Role = 'CONSULTOR';
 
+// `usuario.ativo` e a situacao da conta, que e global; `ativo` e a do vinculo nesta organizacao.
+// A conta inativada pelo DELETE /users/{id} continua vinculada, para preservar o historico.
 export interface MemberResponse {
   id: string;
-  usuario: { id: string; nome: string; email: string };
+  usuario: { id: string; nome: string; email: string; ativo: boolean };
   papel: string;
   dataVinculo: string;
   ativo: boolean;
@@ -28,6 +30,7 @@ function toResponse(member: MemberRecord): MemberResponse {
       id: member.user.id.toString(),
       nome: member.user.name,
       email: member.user.email,
+      ativo: member.user.active,
     },
     papel: member.role,
     dataVinculo: formatCivilDate(member.linkedAt),

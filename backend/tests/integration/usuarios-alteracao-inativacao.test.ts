@@ -71,6 +71,12 @@ describe('alteração e inativação de usuários', () => {
       (await prisma.membership.findUniqueOrThrow({ where: { id: membership.id } })).active,
     ).toBe(true);
     expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).active).toBe(false);
+    const members = await request(createApp())
+      .get(`/organizacoes/${ctx.organization.id}/membros`)
+      .set('Authorization', ctx.authorization);
+    expect(
+      members.body.dados.find((item: { id: string }) => item.id === membership.id.toString()),
+    ).toMatchObject({ ativo: true, usuario: { id: user.id.toString(), ativo: false } });
     expect(
       (await request(createApp()).post('/auth/login').send({ email: user.email, password })).status,
     ).toBe(403);

@@ -11,9 +11,10 @@ import { getOrganizationId, podeEscrever } from '../lib/session';
 import type { Papel } from '../lib/session';
 import { useTituloPagina } from '../lib/useTituloPagina';
 
+// `ativo` e o vinculo; `usuario.ativo` e a conta. A conta inativada continua vinculada.
 interface Member {
   id: string;
-  usuario: { id: string; nome: string; email: string };
+  usuario: { id: string; nome: string; email: string; ativo: boolean };
   papel: Papel;
   dataVinculo: string;
   ativo: boolean;
@@ -168,7 +169,13 @@ export function MembersPage() {
 
     try {
       await apiRequest(`/users/${membro.usuario.id}`, { method: 'DELETE' });
-      setMembros((atual) => atual.filter((item) => item.usuario.id !== membro.usuario.id));
+      setMembros((atual) =>
+        atual.map((item) =>
+          item.usuario.id === membro.usuario.id
+            ? { ...item, usuario: { ...item.usuario, ativo: false } }
+            : item,
+        ),
+      );
       setMensagem(
         `${membro.usuario.nome} foi inativado. O vínculo e os lançamentos históricos foram preservados.`,
       );
@@ -243,7 +250,7 @@ export function MembersPage() {
               </tr>
             </thead>
             {carregando ? (
-              <TabelaEsqueleto colunas={4} />
+              <TabelaEsqueleto colunas={escrita ? 5 : 4} />
             ) : (
               <tbody>
                 {membros.map((membro) => {
@@ -255,6 +262,9 @@ export function MembersPage() {
                       <td data-coluna="texto" data-campo="nome">
                         {membro.usuario.nome}
                         {ehVoce && <span className="membro__voce"> (você)</span>}
+                        {!membro.usuario.ativo && (
+                          <span className="membro__voce"> (conta inativa)</span>
+                        )}
                       </td>
                       <td data-coluna="texto" data-campo="email">
                         {membro.usuario.email}
@@ -292,7 +302,7 @@ export function MembersPage() {
                             >
                               Editar
                             </Link>
-                            {!ehVoce && (
+                            {!ehVoce && membro.usuario.ativo && (
                               <button
                                 type="button"
                                 data-variante="perigo"

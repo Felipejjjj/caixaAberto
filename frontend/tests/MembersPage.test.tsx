@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { MembersPage } from '../src/pages/MembersPage';
 import { autenticar, stubApi } from './helpers/api';
@@ -21,7 +21,7 @@ const MEMBROS = {
   dados: [
     {
       id: '12',
-      usuario: { id: '5', nome: 'Maria', email: 'maria@grupo.org' },
+      usuario: { id: '5', nome: 'Maria', email: 'maria@grupo.org', ativo: true },
       papel: 'CONSULTOR',
       dataVinculo: '2026-09-24',
       ativo: true,
@@ -245,5 +245,68 @@ describe('MembersPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Não é possível rebaixar o último tesoureiro ativo',
     );
+  });
+
+  // US05: a conta inativada continua vinculada, entao a linha fica na lista marcada como inativa.
+  it('inativa a conta após a confirmação e mantém o membro marcado como inativo', async () => {
+    autenticar();
+    stubApi({
+      '/users/me/organizacoes': { body: ORGANIZACOES_DO_USUARIO },
+      '/organizacoes/2/membros': { body: MEMBROS },
+    });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const usuario = userEvent.setup();
+
+    renderizar();
+
+    await screen.findByText('Maria');
+
+    const api = stubApi({
+      '/users/me/organizacoes': { body: ORGANIZACOES_DO_USUARIO },
+      '/users/5': { body: { id: '5', active: false } },
+    });
+
+    await usuario.click(screen.getByRole('button', { name: 'Inativar' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Maria foi inativado.');
+    expect(api.chamadasPara('/users/5')[0]!.method).toBe('DELETE');
+    expect(screen.getByText('Maria')).toBeInTheDocument();
+    expect(screen.getByText('(conta inativa)')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Inativar' })).not.toBeInTheDocument();
+  });
+
+  it('não inativa quando a confirmação é cancelada', async () => {
+    autenticar();
+    const api = stubApi({
+      '/users/me/organizacoes': { body: ORGANIZACOES_DO_USUARIO },
+      '/organizacoes/2/membros': { body: MEMBROS },
+    });
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const usuario = userEvent.setup();
+
+    renderizar();
+
+    await usuario.click(await screen.findByRole('button', { name: 'Inativar' }));
+
+    expect(api.chamadasPara('/users/5')).toHaveLength(0);
+    expect(screen.queryByText('(conta inativa)')).not.toBeInTheDocument();
+  });
+
+  it('mostra a conta já inativa sem a ação de inativar', async () => {
+    autenticar();
+    stubApi({
+      '/users/me/organizacoes': { body: ORGANIZACOES_DO_USUARIO },
+      '/organizacoes/2/membros': {
+        body: {
+          dados: [{ ...MEMBROS.dados[0], usuario: { ...MEMBROS.dados[0]!.usuario, ativo: false } }],
+        },
+      },
+    });
+
+    renderizar();
+
+    expect(await screen.findByText('(conta inativa)')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Inativar' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Editar' })).toBeInTheDocument();
   });
 });
