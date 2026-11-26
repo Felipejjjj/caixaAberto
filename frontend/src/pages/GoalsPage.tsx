@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 
 import { EstadoVazio } from '../components/ui/EstadoVazio';
+import { hojeISO } from '../lib/data';
 import { formatarData, formatarMoeda } from '../lib/formato';
 import { ApiError, apiRequest } from '../lib/httpClient';
 import { podeEscrever } from '../lib/session';
@@ -45,19 +46,13 @@ const VALORES_VAZIOS: FormValues = {
   prazo: '',
 };
 
-function hojeIso(): string {
-  const hoje = new Date();
-  const ano = hoje.getFullYear();
-  const mes = String(hoje.getMonth() + 1).padStart(2, '0');
-  const dia = String(hoje.getDate()).padStart(2, '0');
-  return `${ano}-${mes}-${dia}`;
-}
-
 function normalizarValor(valor: string): string {
   return valor.replace(',', '.').trim();
 }
 
-function validar(values: FormValues): FieldErrors {
+// Na edicao o prazo so e conferido quando muda: uma meta com prazo encerrado ainda pode ter a
+// descricao ou o valor-alvo corrigidos, e a API so valida o prazo que recebe.
+function validar(values: FormValues, original: Goal | null): FieldErrors {
   const erros: FieldErrors = {};
   const valor = normalizarValor(values.valorAlvo);
 
@@ -71,11 +66,24 @@ function validar(values: FormValues): FieldErrors {
 
   if (!values.prazo) {
     erros.prazo = 'Informe o prazo da meta.';
-  } else if (values.prazo < hojeIso()) {
+  } else if ((!original || values.prazo !== original.prazo) && values.prazo < hojeISO()) {
     erros.prazo = 'O prazo deve ser hoje ou uma data futura.';
   }
 
   return erros;
+}
+
+// O PUT recebe so o que mudou, para nao reenviar um prazo ja vencido que a API recusaria.
+function camposAlterados(values: FormValues, original: Goal): Partial<FormValues> {
+  const alterados: Partial<FormValues> = {};
+  const descricao = values.descricao.trim();
+  const valorAlvo = normalizarValor(values.valorAlvo);
+
+  if (descricao !== original.descricao) alterados.descricao = descricao;
+  if (Number(valorAlvo) !== Number(original.valorAlvo)) alterados.valorAlvo = valorAlvo;
+  if (values.prazo !== original.prazo) alterados.prazo = values.prazo;
+
+  return alterados;
 }
 
 function percentualSeguro(percentual: number): number {
@@ -94,7 +102,8 @@ export function GoalsPage() {
   const [form, setForm] = useState<FormValues>(VALORES_VAZIOS);
   const [errosCampos, setErrosCampos] = useState<FieldErrors>({});
   const [erroFormulario, setErroFormulario] = useState<string | null>(null);
-  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [editando, setEditando] = useState<Goal | null>(null);
+  const descricaoRef = useRef<HTMLInputElement>(null);
   const [salvando, setSalvando] = useState(false);
 
   const carregarMetas = useCallback(async () => {
@@ -123,15 +132,16 @@ export function GoalsPage() {
   }
 
   function iniciarEdicao(meta: Goal) {
-    setEditandoId(meta.id);
+    setEditando(meta);
     setForm({ descricao: meta.descricao, valorAlvo: meta.valorAlvo, prazo: meta.prazo });
     setErrosCampos({});
     setErroFormulario(null);
     setMensagem(null);
+    descricaoRef.current?.focus();
   }
 
   function cancelarEdicao() {
-    setEditandoId(null);
+    setEditando(null);
     setForm(VALORES_VAZIOS);
     setErrosCampos({});
     setErroFormulario(null);
@@ -140,23 +150,32 @@ export function GoalsPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const proximosErros = validar(form);
+    const proximosErros = validar(form, editando);
     setErrosCampos(proximosErros);
     setErroFormulario(null);
     setMensagem(null);
 
     if (Object.keys(proximosErros).length > 0) return;
 
+    const body = editando
+      ? camposAlterados(form, editando)
+      : {
+          descricao: form.descricao.trim(),
+          valorAlvo: normalizarValor(form.valorAlvo),
+          prazo: form.prazo,
+        };
+
+    if (editando && Object.keys(body).length === 0) {
+      cancelarEdicao();
+      setMensagem('Nenhuma alteração para salvar.');
+      return;
+    }
+
     setSalvando(true);
 
     try {
-      const body = {
-        descricao: form.descricao.trim(),
-        valorAlvo: normalizarValor(form.valorAlvo),
-        prazo: form.prazo,
-      };
-      const resposta = editandoId
-        ? await apiRequest<GoalWriteResponse>(`/metas/${editandoId}`, {
+      const resposta = editando
+        ? await apiRequest<GoalWriteResponse>(`/metas/${editando.id}`, {
             method: 'PUT',
             body,
           })
@@ -165,9 +184,9 @@ export function GoalsPage() {
       await carregarMetas();
       setForm(VALORES_VAZIOS);
       setErrosCampos({});
-      setEditandoId(null);
+      setEditando(null);
       setMensagem(
-        editandoId
+        editando
           ? `Meta "${resposta.descricao}" atualizada.`
           : `Meta "${resposta.descricao}" cadastrada.`,
       );
@@ -177,7 +196,7 @@ export function GoalsPage() {
         setErrosCampos((atuais) => ({ ...atuais, ...error.fields }));
       } else {
         setErroFormulario(
-          editandoId ? 'Não foi possível alterar a meta.' : 'Não foi possível cadastrar a meta.',
+          editando ? 'Não foi possível alterar a meta.' : 'Não foi possível cadastrar a meta.',
         );
       }
     } finally {
@@ -199,12 +218,13 @@ export function GoalsPage() {
       {escrita && (
         <form onSubmit={handleSubmit} noValidate>
           <fieldset className="filtros">
-            <legend>{editandoId ? 'Editar meta' : 'Cadastrar meta'}</legend>
+            <legend>{editando ? 'Editar meta' : 'Cadastrar meta'}</legend>
 
             <div className="filtros__campos metas__formulario">
               <label>
                 Descrição
                 <input
+                  ref={descricaoRef}
                   type="text"
                   value={form.descricao}
                   onChange={(event) => alterar('descricao', event.target.value)}
@@ -237,7 +257,7 @@ export function GoalsPage() {
                   type="date"
                   value={form.prazo}
                   onChange={(event) => alterar('prazo', event.target.value)}
-                  min={hojeIso()}
+                  min={hojeISO()}
                   required
                   disabled={salvando}
                   aria-invalid={errosCampos.prazo ? true : undefined}
@@ -247,9 +267,9 @@ export function GoalsPage() {
 
               <div className="acoes metas__acoes">
                 <button type="submit" disabled={salvando}>
-                  {salvando ? 'Salvando...' : editandoId ? 'Salvar alterações' : 'Cadastrar'}
+                  {salvando ? 'Salvando...' : editando ? 'Salvar alterações' : 'Cadastrar'}
                 </button>
-                {editandoId && (
+                {editando && (
                   <button type="button" data-variante="secundario" onClick={cancelarEdicao}>
                     Cancelar
                   </button>

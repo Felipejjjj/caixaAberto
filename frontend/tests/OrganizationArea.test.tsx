@@ -63,7 +63,7 @@ describe('OrganizationArea', () => {
     );
   });
 
-  it('mostra as quatro seções para TESOUREIRO', async () => {
+  it('mostra as cinco seções para TESOUREIRO', async () => {
     autenticar('TESOUREIRO');
     stubApi({ '/users/me/organizacoes': vinculos('TESOUREIRO') });
 
@@ -74,7 +74,7 @@ describe('OrganizationArea', () => {
       within(abas)
         .getAllByRole('link')
         .map((link) => link.textContent),
-    ).toEqual(['Membros', 'Categorias', 'Dados', 'Link público']);
+    ).toEqual(['Membros', 'Categorias', 'Metas', 'Dados', 'Link público']);
   });
 
   it('esconde Dados e Link público de CONSULTOR', async () => {
@@ -88,7 +88,7 @@ describe('OrganizationArea', () => {
       within(abas)
         .getAllByRole('link')
         .map((link) => link.textContent),
-    ).toEqual(['Membros', 'Categorias']);
+    ).toEqual(['Membros', 'Categorias', 'Metas']);
   });
 
   // US07: quem ja tem organizacao tambem cria outra, e passa a ser tesoureiro dela.
